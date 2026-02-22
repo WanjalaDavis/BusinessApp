@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.db.models import Sum, Q, Count, F
 from django.db import transaction, IntegrityError
-from django.http import JsonResponse, HttpResponseForbidden
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponseForbidden
 from django.core.paginator import Paginator
 from django.conf import settings
 from decimal import Decimal, InvalidOperation
@@ -709,7 +709,7 @@ def create_withdrawal(request):
         messages.error(request, f'Error creating withdrawal: {str(e)}')
         logger.error(f"Withdrawal creation error: {str(e)}", exc_info=True)
     
-    return redirect('XMR:account#withdrawals-tab')
+    return HttpResponseRedirect('/account/?tab=withdrawals')
 
 
 @login_required(login_url='XMR:signupin')
@@ -735,7 +735,7 @@ def cancel_withdrawal(request, withdrawal_id):
     except ValidationError as e:
         messages.error(request, str(e))
     
-    return redirect('XMR:account#withdrawals-tab')
+    return HttpResponseRedirect('/account/?tab=withdrawals')
 
 
 # ==================== INVESTMENT VIEWS ====================
