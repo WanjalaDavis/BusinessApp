@@ -1,0 +1,1444 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Monero · Premium Investment Marketplace</title>
+    
+    <!-- Bootstrap 5.3 + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <style>
+        /* ===== RESET & BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 30%, rgba(241, 90, 36, 0.03) 0%, transparent 30%),
+                        radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.03) 0%, transparent 30%),
+                        radial-gradient(circle at 40% 80%, rgba(59, 130, 246, 0.03) 0%, transparent 30%);
+            pointer-events: none;
+            z-index: -1;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-1%, 1%) scale(1.02); }
+            50% { transform: translate(1%, -1%) scale(0.98); }
+            75% { transform: translate(-1%, -1%) scale(1.01); }
+        }
+
+        :root[data-bs-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --card-hover: rgba(255, 255, 255, 0.95);
+            --sidebar-hover: rgba(0, 0, 0, 0.03);
+            --border-color: rgba(0, 0, 0, 0.06);
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --text-muted: #6b7280;
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            --accent-primary: #f15a24;
+            --accent-primary-light: #ff8c5a;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --accent-info: #3b82f6;
+            --accent-purple: #8b5cf6;
+        }
+
+        :root[data-bs-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --card-hover: rgba(30, 41, 59, 0.95);
+            --sidebar-hover: rgba(255, 255, 255, 0.03);
+            --border-color: rgba(255, 255, 255, 0.06);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            --accent-primary: #f97316;
+            --accent-primary-light: #fb923c;
+            --accent-success: #22c55e;
+            --accent-warning: #eab308;
+            --accent-danger: #ef4444;
+            --accent-info: #3b82f6;
+            --accent-purple: #a78bfa;
+        }
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 800;
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-link-custom {
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding: 0.5rem 1rem !important;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .nav-link-custom:hover {
+            color: var(--accent-primary);
+            background: var(--sidebar-hover);
+        }
+
+        .nav-link-custom.active {
+            color: var(--accent-primary);
+            background: var(--sidebar-hover);
+            border-bottom: 2px solid var(--accent-primary);
+        }
+
+        .theme-toggle {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--accent-primary);
+            transform: rotate(15deg);
+        }
+
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-md);
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05) rotate(5deg);
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero-section {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            border-radius: 40px;
+            padding: 3rem;
+            margin-bottom: 3rem;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .hero-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(0.9rem, 2vw, 1.2rem);
+            opacity: 0.9;
+            max-width: 600px;
+            margin-bottom: 2rem;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .hero-stat-value {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .hero-stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* ===== STATS GRID ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-note {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* ===== BALANCE CARD ===== */
+        .balance-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .balance-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .balance-amount {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
+        }
+
+        .balance-amount small {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .balance-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .btn-balance {
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 0.8rem 1.5rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-balance:hover {
+            background: var(--accent-primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* ===== FILTER SECTION ===== */
+        .filter-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .filter-tab {
+            padding: 0.6rem 1.5rem;
+            border-radius: 30px;
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-tab:hover,
+        .filter-tab.active {
+            background: var(--accent-primary);
+            color: white;
+            border-color: transparent;
+        }
+
+        .filter-search {
+            position: relative;
+        }
+
+        .filter-search i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .filter-search input {
+            width: 100%;
+            padding: 0.8rem 1rem 0.8rem 2.5rem;
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            color: var(--text-primary);
+        }
+
+        .filter-search input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        /* ===== TOKENS GRID ===== */
+        .tokens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .token-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 2rem;
+            transition: all 0.4s ease;
+            position: relative;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .token-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-xl);
+            background: var(--card-hover);
+        }
+
+        .token-badge {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .token-badge.active {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-success);
+        }
+
+        .token-badge.coming-soon {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent-warning);
+        }
+
+        .token-badge.sold-out {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-danger);
+        }
+
+        .token-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            margin-bottom: 1.5rem;
+        }
+
+        .token-name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.3rem;
+        }
+
+        .token-display-name {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .token-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .token-detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .token-detail-label {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+
+        .token-detail-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .token-detail-value small {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .token-detail-value.highlight {
+            color: var(--accent-primary);
+        }
+
+        .token-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .token-progress {
+            flex: 1;
+            margin-right: 1rem;
+        }
+
+        .progress {
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, var(--accent-success), var(--accent-primary));
+        }
+
+        .token-availability {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .token-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .token-roi {
+            background: var(--sidebar-hover);
+            padding: 0.5rem 1rem;
+            border-radius: 16px;
+            font-weight: 600;
+            color: var(--accent-success);
+        }
+
+        .btn-invest {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 16px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-invest:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 30px -10px var(--accent-primary);
+        }
+
+        .btn-invest:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--text-muted);
+        }
+
+        .btn-invest:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ===== INVESTMENTS SECTIONS ===== */
+        .investments-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .section-header h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-header h3 i {
+            color: var(--accent-primary);
+            font-size: 1.8rem;
+        }
+
+        .section-badge {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 30px;
+            font-weight: 600;
+        }
+
+        .investments-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 10px;
+        }
+
+        .investments-table thead th {
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .investments-table tbody tr {
+            background: var(--sidebar-hover);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .investments-table tbody tr:hover {
+            transform: scale(1.01);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .investments-table td {
+            padding: 1.2rem 1.5rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        .investments-table td:first-child {
+            border-top-left-radius: 16px;
+            border-bottom-left-radius: 16px;
+        }
+
+        .investments-table td:last-child {
+            border-top-right-radius: 16px;
+            border-bottom-right-radius: 16px;
+        }
+
+        .badge-status {
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        .badge-status.active {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-success);
+        }
+
+        .badge-status.completed {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-info);
+        }
+
+        .badge-status.pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent-warning);
+        }
+
+        .progress-cell {
+            min-width: 150px;
+        }
+
+        .amount-positive {
+            color: var(--accent-success);
+            font-weight: 600;
+        }
+
+        .amount-primary {
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h4 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* ===== TOAST NOTIFICATIONS ===== */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .toast {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            margin-bottom: 0.5rem;
+            min-width: 320px;
+            max-width: 90vw;
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast-body {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .toast-success { border-left: 4px solid var(--accent-success); }
+        .toast-error { border-left: 4px solid var(--accent-danger); }
+        .toast-warning { border-left: 4px solid var(--accent-warning); }
+        .toast-info { border-left: 4px solid var(--accent-info); }
+
+        /* ===== LOADING SPINNER ===== */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 992px) {
+            .main-content {
+                padding: 0 1rem;
+            }
+
+            .hero-stats {
+                gap: 1.5rem;
+            }
+
+            .tokens-grid {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem;
+            }
+
+            .hero-section {
+                padding: 2rem 1.5rem;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .hero-stats {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .balance-actions {
+                flex-direction: column;
+            }
+
+            .btn-balance {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .tokens-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .token-details {
+                grid-template-columns: 1fr;
+            }
+
+            .investments-table {
+                min-width: 800px;
+            }
+
+            .filter-tabs {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                padding-bottom: 0.5rem;
+            }
+
+            .filter-tab {
+                white-space: nowrap;
+            }
+        }
+
+        [data-aos] {
+            pointer-events: none;
+        }
+
+        [data-aos].aos-animate {
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading Spinner -->
+<div class="spinner-overlay" id="loadingSpinner">
+    <div class="spinner"></div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ========== NAVBAR ========== -->
+<nav class="navbar">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center">
+            <a href="{% url 'XMR:index' %}" class="text-decoration-none">
+                <span class="brand-text">monero</span>
+            </a>
+        </div>
+
+        <div class="d-flex align-items-center gap-4">
+            <div class="d-none d-md-flex gap-2">
+                <a href="{% url 'XMR:account' %}#dashboard-tab" class="nav-link-custom">Dashboard</a>
+                <a href="{% url 'XMR:investments' %}" class="nav-link-custom active">Investments</a>
+                <a href="{% url 'XMR:account' %}#deposits-tab" class="nav-link-custom">Deposits</a>
+                <a href="{% url 'XMR:account' %}#withdrawals-tab" class="nav-link-custom">Withdrawals</a>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <button class="theme-toggle" id="themeToggle">
+                    <i class="bi bi-sun-fill light-icon"></i>
+                    <i class="bi bi-moon-fill dark-icon"></i>
+                </button>
+
+                <div class="dropdown">
+                    <button class="btn p-0" data-bs-toggle="dropdown">
+                        <div class="user-avatar">
+                            {{ user.first_name|first|default:user.username|first|upper }}
+                        </div>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'XMR:account' %}">
+                            <i class="bi bi-person-circle me-2"></i>My Account
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'XMR:investments' %}">
+                            <i class="bi bi-graph-up me-2"></i>Investments
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'XMR:logout' %}">
+                            <i class="bi bi-box-arrow-right me-2"></i>Logout
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- ========== MAIN CONTENT ========== -->
+<main class="main-content">
+    <!-- Hero Section -->
+    <div class="hero-section" data-aos="fade-up">
+        <h1 class="hero-title">Grow Your Wealth with<br>Premium Investment Tokens</h1>
+        <p class="hero-subtitle">Choose from our carefully curated selection of high-yield investment tokens. Each token offers guaranteed daily returns with capital preservation.</p>
+        <div class="hero-stats">
+            <div class="hero-stat-item">
+                <span class="hero-stat-value">{{ active_tokens|length }}</span>
+                <span class="hero-stat-label">Active Tokens</span>
+            </div>
+            <div class="hero-stat-item">
+                <span class="hero-stat-value">{{ active_investments|length }}</span>
+                <span class="hero-stat-label">Your Active</span>
+            </div>
+            <div class="hero-stat-item">
+                <span class="hero-stat-value">{{ total_earned|default:"0"|floatformat:0 }}K+</span>
+                <span class="hero-stat-label">Your Earnings</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid" data-aos="fade-up" data-aos-delay="100">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <div class="stat-value">{{ wallet.balance|floatformat:0 }}</div>
+            <div class="stat-label">Total Balance</div>
+            <div class="stat-note">{{ wallet.available_balance|floatformat:0 }} available</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="bi bi-lock"></i>
+            </div>
+            <div class="stat-value">{{ wallet.locked_balance|floatformat:0 }}</div>
+            <div class="stat-label">Locked Balance</div>
+            <div class="stat-note">In active investments</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="bi bi-graph-up"></i>
+            </div>
+            <div class="stat-value">{{ total_invested|floatformat:0 }}</div>
+            <div class="stat-label">Total Invested</div>
+            <div class="stat-note">Active investments</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="bi bi-trophy"></i>
+            </div>
+            <div class="stat-value">{{ total_earned|floatformat:0 }}</div>
+            <div class="stat-label">Total Earned</div>
+            <div class="stat-note">Lifetime profits</div>
+        </div>
+    </div>
+
+    <!-- Balance Card -->
+    <div class="balance-card" data-aos="fade-up" data-aos-delay="150">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="balance-label">Your Available Balance</div>
+                <div class="balance-amount">{{ wallet.available_balance|floatformat:2 }} <small>KSH</small></div>
+                <div class="balance-actions">
+                    <a href="{% url 'XMR:account' %}#deposits-tab" class="btn-balance">
+                        <i class="bi bi-plus-circle"></i>
+                        Deposit Funds
+                    </a>
+                    <a href="{% url 'XMR:account' %}#withdrawals-tab" class="btn-balance">
+                        <i class="bi bi-arrow-up-circle"></i>
+                        Withdraw
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="balance-label">Next Payout</div>
+                        <div class="fs-3 fw-bold text-primary">{{ next_payout_days|default:"0" }} <small class="fs-6">days</small></div>
+                        {% if next_payout %}
+                        <small class="text-muted">{{ next_payout.token.name }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-6">
+                        <div class="balance-label">Active Investments</div>
+                        <div class="fs-3 fw-bold text-success">{{ active_investments|length }}</div>
+                        <small class="text-muted">{{ completed_investments|length }} completed</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section" data-aos="fade-up" data-aos-delay="200">
+        <div class="filter-tabs">
+            <span class="filter-tab active" onclick="filterTokens('all')">All Tokens</span>
+            <span class="filter-tab" onclick="filterTokens('active')">Active</span>
+            <span class="filter-tab" onclick="filterTokens('coming_soon')">Coming Soon</span>
+            <span class="filter-tab" onclick="filterTokens('sold_out')">Sold Out</span>
+        </div>
+        <div class="filter-search">
+            <i class="bi bi-search"></i>
+            <input type="text" id="tokenSearch" placeholder="Search tokens by name or description...">
+        </div>
+    </div>
+
+    <!-- Tokens Grid -->
+    <div class="tokens-grid" id="tokensGrid">
+        {% for token in active_tokens %}
+        <div class="token-card" data-token-id="{{ token.id }}" data-token-status="{{ token.status|lower }}" data-aos="fade-up" data-aos-delay="{{ forloop.counter|add:'200' }}">
+            {% if token.status == 'ACTIVE' %}
+            <span class="token-badge active">
+                <i class="bi bi-check-circle"></i> Active
+            </span>
+            {% elif token.status == 'COMING_SOON' %}
+            <span class="token-badge coming-soon">
+                <i class="bi bi-clock"></i> Coming Soon
+            </span>
+            {% elif token.status == 'SOLD_OUT' %}
+            <span class="token-badge sold-out">
+                <i class="bi bi-x-circle"></i> Sold Out
+            </span>
+            {% endif %}
+
+            <div class="token-icon">
+                <i class="bi {{ token.icon|default:'bi-coin' }}"></i>
+            </div>
+
+            <h3 class="token-name">{{ token.name }}</h3>
+            <div class="token-display-name">{{ token.display_name }}</div>
+
+            <div class="token-details">
+                <div class="token-detail-item">
+                    <span class="token-detail-label">Min Investment</span>
+                    <span class="token-detail-value highlight">{{ token.minimum_investment|floatformat:0 }} <small>KSH</small></span>
+                </div>
+                <div class="token-detail-item">
+                    <span class="token-detail-label">Daily Return</span>
+                    <span class="token-detail-value">{{ token.daily_return|floatformat:2 }} <small>KSH</small></span>
+                </div>
+                <div class="token-detail-item">
+                    <span class="token-detail-label">Duration</span>
+                    <span class="token-detail-value">{{ token.return_days }} <small>days</small></span>
+                </div>
+                <div class="token-detail-item">
+                    <span class="token-detail-label">Total Return</span>
+                    <span class="token-detail-value highlight">{{ token.total_return|floatformat:2 }} <small>KSH</small></span>
+                </div>
+            </div>
+
+            <div class="token-stats">
+                <div class="token-progress">
+                    <div class="progress">
+                        {% if token.total_supply %}
+                            <div class="progress-bar" style="width: {% widthratio token.purchased_count token.total_supply 100 %}%"></div>
+                        {% else %}
+                            <div class="progress-bar" style="width: {{ token.purchased_count|default:0 }}%"></div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="token-availability">
+                    {% if token.total_supply %}
+                        {{ token.purchased_count }}/{{ token.total_supply }} sold
+                    {% else %}
+                        {{ token.purchased_count }} sold
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="token-footer">
+                <div class="token-roi">
+                    <i class="bi bi-graph-up-arrow me-1"></i>
+                    {{ token.roi|floatformat:1 }}% ROI
+                </div>
+                
+                {% if token.status == 'ACTIVE' %}
+                    {% if token.total_supply and token.purchased_count >= token.total_supply %}
+                        <button class="btn-invest" disabled>
+                            <i class="bi bi-lock"></i> Sold Out
+                        </button>
+                    {% elif wallet.available_balance < token.minimum_investment %}
+                        <button class="btn-invest" disabled>
+                            <i class="bi bi-exclamation-circle"></i> Insufficient
+                        </button>
+                    {% elif token.max_purchases_per_user %}
+                        {# SIMPLE APPROACH: Just show Invest Now button, let the backend handle max purchase validation #}
+                        <form method="POST" action="{% url 'XMR:buy_investment' token.id %}" onsubmit="return confirmInvestment('{{ token.name }}', '{{ token.minimum_investment }}', '{{ token.daily_return }}', '{{ token.return_days }}')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-invest">
+                                <i class="bi bi-lightning-charge"></i> Invest Now
+                            </button>
+                        </form>
+                    {% else %}
+                        <form method="POST" action="{% url 'XMR:buy_investment' token.id %}" onsubmit="return confirmInvestment('{{ token.name }}', '{{ token.minimum_investment }}', '{{ token.daily_return }}', '{{ token.return_days }}')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-invest">
+                                <i class="bi bi-lightning-charge"></i> Invest Now
+                            </button>
+                        </form>
+                    {% endif %}
+                {% elif token.status == 'COMING_SOON' %}
+                    <button class="btn-invest" disabled>
+                        <i class="bi bi-clock"></i> Coming Soon
+                    </button>
+                {% else %}
+                    <button class="btn-invest" disabled>
+                        <i class="bi bi-lock"></i> Unavailable
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state" style="grid-column: 1/-1;">
+            <i class="bi bi-coin"></i>
+            <h4>No Tokens Available</h4>
+            <p class="text-muted">Check back later for new investment opportunities</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ========== ACTIVE INVESTMENTS SECTION ========== -->
+    <div class="investments-section" data-aos="fade-up">
+        <div class="section-header">
+            <h3>
+                <i class="bi bi-play-circle-fill"></i>
+                Active Investments
+            </h3>
+            <span class="section-badge">{{ active_investments|length }} Active</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="investments-table">
+                <thead>
+                    <tr>
+                        <th>Token</th>
+                        <th>Amount</th>
+                        <th>Daily Return</th>
+                        <th>Progress</th>
+                        <th>Received</th>
+                        <th>Days Left</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for investment in active_investments %}
+                    <tr>
+                        <td>
+                            <strong>{{ investment.token.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ investment.token.display_name }}</small>
+                        </td>
+                        <td class="amount-primary">{{ investment.amount|floatformat:2 }} KSH</td>
+                        <td class="text-success">{{ investment.daily_return|floatformat:2 }} KSH</td>
+                        <td class="progress-cell">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1">
+                                    <div class="progress-bar" style="width: {{ investment.get_progress_percentage }}%"></div>
+                                </div>
+                                <small>{{ investment.get_progress_percentage|floatformat:1 }}%</small>
+                            </div>
+                        </td>
+                        <td class="amount-positive">{{ investment.total_paid|floatformat:2 }} KSH</td>
+                        <td><span class="badge bg-primary">{{ investment.remaining_payouts }}</span></td>
+                        <td>{{ investment.end_date|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="badge-status active">
+                                <i class="bi bi-check-circle-fill"></i> ACTIVE
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <i class="bi bi-play-circle"></i>
+                            <h5>No Active Investments</h5>
+                            <p class="text-muted">Start investing in tokens above to grow your wealth</p>
+                            <a href="#tokensGrid" class="btn-primary btn-invest mt-3" style="display: inline-block;">
+                                <i class="bi bi-coin"></i> Browse Tokens
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========== COMPLETED INVESTMENTS SECTION ========== -->
+    <div class="investments-section" data-aos="fade-up">
+        <div class="section-header">
+            <h3>
+                <i class="bi bi-check-circle-fill"></i>
+                Completed Investments
+            </h3>
+            <span class="section-badge">{{ completed_investments|length }} Completed</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="investments-table">
+                <thead>
+                    <tr>
+                        <th>Token</th>
+                        <th>Amount</th>
+                        <th>Total Return</th>
+                        <th>Profit</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th>ROI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for investment in completed_investments %}
+                    <tr>
+                        <td>
+                            <strong>{{ investment.token.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ investment.token.display_name }}</small>
+                        </td>
+                        <td class="amount-primary">{{ investment.amount|floatformat:2 }} KSH</td>
+                        <td class="amount-positive">{{ investment.total_paid|floatformat:2 }} KSH</td>
+                        <td class="text-success">
+                            {{ investment.total_paid|add:investment.amount|floatformat:2 }} KSH
+                        </td>
+                        <td>{{ investment.start_date|date:"M d, Y" }}</td>
+                        <td>{{ investment.end_date|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="badge-status completed">
+                                <i class="bi bi-check-circle"></i> COMPLETED
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-success text-white">
+                                {% widthratio investment.total_paid investment.amount 100 as roi %}
+                                {{ roi|add:"-100" }}%
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <i class="bi bi-clock-history"></i>
+                            <h5>No Completed Investments</h5>
+                            <p class="text-muted">Your completed investments will appear here</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+<script>
+    // Initialize AOS
+    AOS.init({
+        duration: 800,
+        once: true,
+        offset: 50
+    });
+
+    // ========== THEME TOGGLE ==========
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+    
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    html.setAttribute('data-bs-theme', savedTheme);
+    
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = html.getAttribute('data-bs-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-bs-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    });
+
+    // ========== FILTER TOKENS ==========
+    function filterTokens(status) {
+        // Get the clicked element
+        const clickedTab = event.target;
+        
+        // Update active tab
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        clickedTab.classList.add('active');
+        
+        // Filter tokens
+        const tokens = document.querySelectorAll('.token-card');
+        tokens.forEach(token => {
+            const tokenStatus = token.dataset.tokenStatus;
+            if (status === 'all' || tokenStatus === status) {
+                token.style.display = 'block';
+            } else {
+                token.style.display = 'none';
+            }
+        });
+    }
+
+    // ========== SEARCH TOKENS ==========
+    document.getElementById('tokenSearch').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const tokens = document.querySelectorAll('.token-card');
+        
+        tokens.forEach(token => {
+            const tokenName = token.querySelector('.token-name').textContent.toLowerCase();
+            const tokenDisplayName = token.querySelector('.token-display-name').textContent.toLowerCase();
+            
+            if (tokenName.includes(searchTerm) || tokenDisplayName.includes(searchTerm)) {
+                token.style.display = 'block';
+            } else {
+                token.style.display = 'none';
+            }
+        });
+    });
+
+    // ========== CONFIRM INVESTMENT ==========
+    function confirmInvestment(tokenName, amount, dailyReturn, days) {
+        const totalReturn = (parseFloat(dailyReturn) * parseInt(days)).toFixed(2);
+        const message = 
+            `Confirm Investment in ${tokenName}:\n\n` +
+            `Amount: ${amount} KSH\n` +
+            `Daily Return: ${dailyReturn} KSH\n` +
+            `Duration: ${days} days\n` +
+            `Total Return: ${totalReturn} KSH\n\n` +
+            `This amount will be deducted from your available balance.\n` +
+            `Continue with investment?`;
+        
+        return confirm(message);
+    }
+
+    // ========== TOAST NOTIFICATIONS ==========
+    function showToast(message, type = 'success') {
+        const toastContainer = document.getElementById('toastContainer');
+        const toastId = 'toast-' + Date.now();
+        
+        const toast = document.createElement('div');
+        toast.id = toastId;
+        toast.className = `toast toast-${type}`;
+        toast.setAttribute('role', 'alert');
+        
+        const icon = type === 'success' ? 'bi-check-circle' : 
+                    type === 'error' ? 'bi-exclamation-circle' :
+                    type === 'warning' ? 'bi-exclamation-triangle' : 'bi-info-circle';
+        
+        toast.innerHTML = `
+            <div class="toast-body">
+                <i class="bi ${icon} fs-5"></i>
+                <span class="flex-grow-1">${message}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        toastContainer.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
+        bsToast.show();
+        
+        toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    }
+
+    // Show messages
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if messages %}
+            {% for message in messages %}
+                showToast('{{ message|escapejs }}', '{{ message.tags }}');
+            {% endfor %}
+        {% endif %}
+    });
+
+    // Smooth scroll to tokens
+    document.querySelectorAll('a[href="#tokensGrid"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelector('#tokensGrid').scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+    });
+
+    // Handle hash links for navigation from account page
+    if (window.location.hash) {
+        const hash = window.location.hash.substring(1);
+        if (hash === 'deposits-tab' || hash === 'withdrawals-tab' || hash === 'dashboard-tab') {
+            window.location.href = "{% url 'XMR:account' %}#" + hash;
+        }
+    }
+</script>
+
+</body>
+</html>

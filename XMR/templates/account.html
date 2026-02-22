@@ -1,0 +1,2652 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Monero · Premium Account Dashboard</title>
+    
+    <!-- Bootstrap 5.3 + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <!-- Anime.js for advanced animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    
+    <style>
+        /* Previous styles remain the same - keeping them for brevity */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 30%, rgba(241, 90, 36, 0.03) 0%, transparent 30%),
+                        radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.03) 0%, transparent 30%),
+                        radial-gradient(circle at 40% 80%, rgba(59, 130, 246, 0.03) 0%, transparent 30%);
+            pointer-events: none;
+            z-index: -1;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-1%, 1%) scale(1.02); }
+            50% { transform: translate(1%, -1%) scale(0.98); }
+            75% { transform: translate(-1%, -1%) scale(1.01); }
+        }
+
+        :root[data-bs-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            --sidebar-bg: rgba(255, 255, 255, 0.85);
+            --sidebar-hover: rgba(0, 0, 0, 0.03);
+            --sidebar-active: rgba(241, 90, 36, 0.08);
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --card-hover: rgba(255, 255, 255, 0.95);
+            --border-color: rgba(0, 0, 0, 0.06);
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --text-muted: #6b7280;
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            --accent-primary: #f15a24;
+            --accent-primary-light: #ff8c5a;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --accent-info: #3b82f6;
+            --accent-purple: #8b5cf6;
+        }
+
+        :root[data-bs-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --sidebar-bg: rgba(15, 23, 42, 0.85);
+            --sidebar-hover: rgba(255, 255, 255, 0.03);
+            --sidebar-active: rgba(241, 90, 36, 0.15);
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --card-hover: rgba(30, 41, 59, 0.95);
+            --border-color: rgba(255, 255, 255, 0.06);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            --accent-primary: #f97316;
+            --accent-primary-light: #fb923c;
+            --accent-success: #22c55e;
+            --accent-warning: #eab308;
+            --accent-danger: #ef4444;
+            --accent-info: #3b82f6;
+            --accent-purple: #a78bfa;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--sidebar-bg);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-primary-light);
+        }
+
+        /* Mobile Menu Button */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1002;
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-menu-btn:hover {
+            transform: scale(1.1);
+            background: var(--accent-primary-light);
+        }
+
+        .mobile-menu-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        .mobile-menu-btn.active i {
+            transform: rotate(90deg);
+        }
+
+        /* Sidebar Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Dashboard Wrapper */
+        .dashboard-wrapper {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 1001;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .sidebar.collapsed {
+            width: 90px;
+        }
+
+        .sidebar.collapsed .sidebar-link span,
+        .sidebar.collapsed .sidebar-section-title,
+        .sidebar.collapsed .user-info {
+            opacity: 0;
+            visibility: hidden;
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-link i {
+            margin-right: 0;
+            font-size: 1.5rem;
+        }
+
+        .sidebar.collapsed .logo-text {
+            display: none;
+        }
+
+        .sidebar.collapsed .logo-icon {
+            display: block !important;
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            transform: rotate(45deg);
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover .logo-icon {
+            transform: rotate(135deg);
+        }
+
+        .logo-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 800;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sidebar-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--accent-primary);
+            color: white;
+            transform: rotate(180deg);
+        }
+
+        .sidebar-user {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar-large {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .user-info h6 {
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            font-size: 1rem;
+            word-break: break-word;
+        }
+
+        .user-info p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 0;
+            word-break: break-word;
+        }
+
+        .verification-badge-small {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.2rem;
+            font-size: 0.7rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 20px;
+            background: var(--sidebar-hover);
+            color: var(--text-secondary);
+        }
+
+        .verification-badge-small.verified {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-success);
+        }
+
+        .sidebar-nav {
+            padding: 1.5rem;
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            padding-left: 0.5rem;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 0.9rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 14px;
+            margin-bottom: 0.25rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-link::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-primary-light));
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-link:hover::before,
+        .sidebar-link.active::before {
+            transform: scaleY(1);
+        }
+
+        .sidebar-link i {
+            font-size: 1.25rem;
+            margin-right: 1rem;
+            transition: all 0.3s ease;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-link span {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .sidebar-link .badge {
+            background: var(--accent-primary);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 20px;
+            margin-left: 0.5rem;
+        }
+
+        .sidebar-link:hover {
+            background: var(--sidebar-hover);
+            color: var(--accent-primary);
+            transform: translateX(5px);
+        }
+
+        .sidebar-link:hover i {
+            transform: scale(1.1);
+            color: var(--accent-primary);
+        }
+
+        .sidebar-link.active {
+            background: var(--sidebar-active);
+            color: var(--accent-primary);
+        }
+
+        .sidebar-link.active i {
+            color: var(--accent-primary);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 300px;
+            padding: 2rem;
+            transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 100vh;
+            width: calc(100% - 300px);
+        }
+
+        .main-content.expanded {
+            margin-left: 90px;
+            width: calc(100% - 90px);
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-md);
+        }
+
+        .page-title h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.2rem;
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+        }
+
+        .page-title p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 0;
+        }
+
+        .top-bar-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .theme-toggle,
+        .notification-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .theme-toggle:hover,
+        .notification-icon:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--accent-primary);
+            color: white;
+            font-size: 0.65rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 20px;
+            min-width: 18px;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(241, 90, 36, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(241, 90, 36, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(241, 90, 36, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(241, 90, 36, 0); }
+        }
+
+        /* Greeting Section */
+        .greeting-card {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            border-radius: 30px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .greeting-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(1.8rem, 5vw, 2.8rem);
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+            line-height: 1.2;
+        }
+
+        .greeting-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .date-badge {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            white-space: nowrap;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+            background: var(--card-hover);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, rgba(241, 90, 36, 0.1), rgba(255, 140, 90, 0.1));
+            color: var(--accent-primary);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: 'Space Grotesk', sans-serif;
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
+            word-break: break-word;
+        }
+
+        .stat-value small {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .stat-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .stat-trend {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .stat-trend.positive { color: var(--accent-success); }
+
+        /* Quick Actions */
+        .quick-actions {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .section-header h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: clamp(1.2rem, 4vw, 1.5rem);
+            margin: 0;
+        }
+
+        .section-header h3 i {
+            color: var(--accent-primary);
+            font-size: 1.5rem;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .action-btn {
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 1.2rem 0.8rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-lg);
+            background: var(--card-hover);
+        }
+
+        .action-btn i {
+            font-size: 2rem;
+            color: var(--accent-primary);
+        }
+
+        .action-btn span {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .action-btn small {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* Tabs Container */
+        .tabs-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 1.5rem;
+        }
+
+        .nav-tabs {
+            border: none;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-tabs .nav-link {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.8rem 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            background: var(--sidebar-hover);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .nav-tabs .nav-link i {
+            font-size: 1.1rem;
+        }
+
+        .nav-tabs .nav-link:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            color: white;
+            border-color: transparent;
+        }
+
+        .tab-pane {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+
+        .tab-pane.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Tables */
+        .table-container {
+            background: var(--sidebar-hover);
+            border-radius: 18px;
+            padding: 1.2rem;
+            overflow-x: auto;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table-header h5 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.4rem 2rem 0.4rem 1rem;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+        }
+
+        .modern-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            min-width: 600px;
+        }
+
+        .modern-table thead th {
+            padding: 0.8rem 1rem;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .modern-table tbody tr {
+            background: var(--card-bg);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .modern-table tbody tr:hover {
+            transform: scale(1.01);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modern-table td {
+            padding: 1rem;
+            color: var(--text-primary);
+            border: none;
+            font-size: 0.9rem;
+        }
+
+        .modern-table td:first-child {
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+        }
+
+        .modern-table td:last-child {
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        /* Status Badges */
+        .badge-status {
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            white-space: nowrap;
+        }
+
+        .badge-status.pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+        }
+
+        .badge-status.verified,
+        .badge-status.completed {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+        }
+
+        .badge-status.rejected {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .badge-status.processing {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+        }
+
+        /* Amount Styling */
+        .amount {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: var(--accent-primary);
+            font-size: 1rem;
+        }
+
+        .amount-positive {
+            color: var(--accent-success);
+        }
+
+        .amount-negative {
+            color: var(--accent-danger);
+        }
+
+        /* Progress Bar */
+        .progress {
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            min-width: 80px;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, var(--accent-success), var(--accent-primary));
+        }
+
+        /* Profile Section */
+        .profile-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 1.5rem;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .profile-avatar-large {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 2rem;
+            text-transform: uppercase;
+            box-shadow: var(--shadow-xl);
+            flex-shrink: 0;
+        }
+
+        .profile-info {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .profile-info h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: clamp(1.3rem, 4vw, 1.8rem);
+            word-break: break-word;
+        }
+
+        .profile-meta {
+            display: flex;
+            gap: 1rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.8rem;
+        }
+
+        .profile-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .verification-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .verification-badge.verified {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-success);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.4rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .form-control, .form-select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(241, 90, 36, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px var(--accent-primary);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .btn-outline:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .btn-outline-danger {
+            border-color: var(--accent-danger);
+            color: var(--accent-danger);
+        }
+
+        .btn-outline-danger:hover {
+            background: var(--accent-danger);
+            color: white;
+        }
+
+        /* Payment Instructions */
+        .payment-instructions {
+            background: var(--sidebar-hover);
+            border-radius: 16px;
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        .payment-instructions h6 {
+            color: var(--accent-primary);
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            font-size: 1rem;
+        }
+
+        .payment-instructions p {
+            margin-bottom: 0.4rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .payment-instructions strong {
+            color: var(--text-primary);
+            background: var(--card-bg);
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-family: monospace;
+        }
+
+        /* Info Alert */
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h5 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 90%;
+        }
+
+        .toast {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            min-width: 280px;
+            max-width: 100%;
+            animation: slideInRight 0.3s ease;
+        }
+
+        .toast-body {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 0.9rem;
+            word-break: break-word;
+        }
+
+        .toast-success { border-left: 4px solid var(--accent-success); }
+        .toast-error { border-left: 4px solid var(--accent-danger); }
+        .toast-warning { border-left: 4px solid var(--accent-warning); }
+        .toast-info { border-left: 4px solid var(--accent-info); }
+
+        /* Loading Spinner */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 90px;
+            }
+            
+            .sidebar .sidebar-link span,
+            .sidebar .sidebar-section-title,
+            .sidebar .user-info {
+                display: none;
+            }
+            
+            .sidebar .sidebar-link i {
+                margin-right: 0;
+                font-size: 1.3rem;
+            }
+            
+            .sidebar .logo-text {
+                display: none;
+            }
+            
+            .main-content {
+                margin-left: 90px;
+                width: calc(100% - 90px);
+            }
+            
+            .sidebar:hover {
+                width: 280px;
+                box-shadow: var(--shadow-xl);
+            }
+            
+            .sidebar:hover .sidebar-link span,
+            .sidebar:hover .sidebar-section-title,
+            .sidebar:hover .user-info {
+                display: block;
+            }
+            
+            .sidebar:hover .sidebar-link i {
+                margin-right: 1rem;
+            }
+            
+            .sidebar:hover .logo-text {
+                display: block;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .main-content {
+                padding: 1.5rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .profile-meta {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: flex;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+            
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            
+            .sidebar .sidebar-link span,
+            .sidebar .sidebar-section-title,
+            .sidebar .user-info {
+                display: block !important;
+            }
+            
+            .sidebar .sidebar-link i {
+                margin-right: 1rem !important;
+            }
+            
+            .sidebar .logo-text {
+                display: block !important;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+                padding: 1rem;
+                padding-top: 5rem;
+            }
+            
+            .main-content.expanded {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .top-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .top-bar-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-tabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 0.5rem;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .nav-tabs .nav-link {
+                white-space: nowrap;
+            }
+            
+            .table-container {
+                padding: 1rem;
+                margin: 0 -0.5rem;
+                border-radius: 16px;
+            }
+            
+            .modern-table {
+                min-width: 500px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stat-card {
+                padding: 1.2rem;
+            }
+            
+            .stat-value {
+                font-size: 1.5rem;
+            }
+            
+            .profile-avatar-large {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+            
+            .profile-info h3 {
+                font-size: 1.2rem;
+            }
+            
+            .profile-meta {
+                flex-direction: column;
+                gap: 0.3rem;
+            }
+            
+            .filter-group {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .filter-select {
+                width: 100%;
+            }
+            
+            .btn-primary,
+            .btn-outline {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .table-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .toast {
+                min-width: auto;
+                width: 90vw;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Mobile Menu Button -->
+<button class="mobile-menu-btn" id="mobileMenuBtn">
+    <i class="bi bi-list"></i>
+</button>
+
+<!-- Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Loading Spinner -->
+<div class="spinner-overlay" id="loadingSpinner">
+    <div class="spinner"></div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ========== DASHBOARD WRAPPER ========== -->
+<div class="dashboard-wrapper">
+    <!-- ========== SIDEBAR ========== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="{% url 'XMR:index' %}" class="logo">
+                <div class="logo-icon">
+                    <i class="bi bi-currency-bitcoin"></i>
+                </div>
+                <span class="logo-text">monero</span>
+            </a>
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+        </div>
+
+        <div class="sidebar-user">
+            <div class="user-avatar-large">
+                {{ user.first_name|first|default:user.username|first|upper }}
+            </div>
+            <div class="user-info">
+                <h6>{{ user.get_full_name|default:user.username }}</h6>
+                <p>{{ user.email|truncatechars:25 }}</p>
+                <div class="d-flex gap-1 mt-2 flex-wrap">
+                    <span class="verification-badge-small {% if phone_verified %}verified{% endif %}">
+                        <i class="bi {% if phone_verified %}bi-check-circle{% else %}bi-x-circle{% endif %}"></i>
+                        Phone
+                    </span>
+                    <span class="verification-badge-small {% if id_verified %}verified{% endif %}">
+                        <i class="bi {% if id_verified %}bi-shield-check{% else %}bi-shield-x{% endif %}"></i>
+                        ID
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Main</div>
+                <a href="#" class="sidebar-link active" onclick="switchTab('dashboard-tab'); return false;">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="sidebar-link" onclick="switchTab('profile-tab'); return false;">
+                    <i class="bi bi-person-circle"></i>
+                    <span>My Profile</span>
+                </a>
+                <a href="#" class="sidebar-link" onclick="switchTab('deposits-tab'); return false;">
+                    <i class="bi bi-wallet2"></i>
+                    <span>Deposits</span>
+                    {% if pending_deposits > 0 %}
+                    <span class="badge">{{ pending_deposits }}</span>
+                    {% endif %}
+                </a>
+                <a href="#" class="sidebar-link" onclick="switchTab('withdrawals-tab'); return false;">
+                    <i class="bi bi-cash"></i>
+                    <span>Withdrawals</span>
+                    {% if pending_withdrawals > 0 %}
+                    <span class="badge">{{ pending_withdrawals }}</span>
+                    {% endif %}
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Financial</div>
+                <a href="{% url 'XMR:investments' %}" class="sidebar-link">
+                    <i class="bi bi-graph-up"></i>
+                    <span>Investments</span>
+                </a>
+                <a href="#" class="sidebar-link" onclick="switchTab('transactions-tab'); return false;">
+                    <i class="bi bi-arrow-left-right"></i>
+                    <span>Transactions</span>
+                </a>
+                <a href="#" class="sidebar-link" onclick="switchTab('referrals-tab'); return false;">
+                    <i class="bi bi-people"></i>
+                    <span>Referrals</span>
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Support</div>
+                <a href="#" class="sidebar-link">
+                    <i class="bi bi-question-circle"></i>
+                    <span>Help Center</span>
+                </a>
+                <a href="#" class="sidebar-link">
+                    <i class="bi bi-chat"></i>
+                    <span>Contact Support</span>
+                </a>
+                <a href="{% url 'XMR:logout' %}" class="sidebar-link text-danger">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="main-content" id="mainContent">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="page-title">
+                <h2>Account Dashboard</h2>
+                <p>Welcome back, {{ user.first_name|default:user.username }}!</p>
+            </div>
+            <div class="top-bar-actions">
+                <div class="dropdown">
+                    <button class="notification-icon" data-bs-toggle="dropdown">
+                        <i class="bi bi-bell"></i>
+                        {% if pending_deposits > 0 or pending_withdrawals > 0 %}
+                        <span class="notification-badge">{{ pending_deposits|add:pending_withdrawals }}</span>
+                        {% endif %}
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <h6 class="dropdown-header">Notifications</h6>
+                        {% if pending_deposits > 0 %}
+                        <a class="dropdown-item" href="#" onclick="switchTab('deposits-tab'); return false;">
+                            <i class="bi bi-wallet2 me-2 text-warning"></i>
+                            {{ pending_deposits }} pending deposit(s)
+                        </a>
+                        {% endif %}
+                        {% if pending_withdrawals > 0 %}
+                        <a class="dropdown-item" href="#" onclick="switchTab('withdrawals-tab'); return false;">
+                            <i class="bi bi-cash me-2 text-info"></i>
+                            {{ pending_withdrawals }} pending withdrawal(s)
+                        </a>
+                        {% endif %}
+                        {% if not phone_verified or not id_verified %}
+                        <a class="dropdown-item" href="#" onclick="switchTab('profile-tab'); return false;">
+                            <i class="bi bi-shield-check me-2 text-primary"></i>
+                            Complete KYC
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <button class="theme-toggle" id="themeToggle">
+                    <i class="bi bi-sun-fill light-icon"></i>
+                    <i class="bi bi-moon-fill dark-icon"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab Content -->
+        <div id="dashboardContent">
+            <!-- Greeting Card -->
+            <div class="greeting-card" data-aos="fade-up">
+                <h1 class="greeting-title">
+                    Good {{ greeting }}, {{ user.first_name|default:user.username }}!
+                </h1>
+                <div class="greeting-subtitle">
+                    <span>Here's what's happening today</span>
+                    <span class="date-badge">
+                        <i class="bi bi-calendar3"></i>
+                        {{ current_date|date:"l, F j, Y" }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card" data-aos="fade-up" data-aos-delay="100">
+                    <div class="stat-icon">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <div class="stat-label">Available Balance</div>
+                    <div class="stat-value">{{ wallet.balance|floatformat:2 }} <small>KSH</small></div>
+                    <div class="stat-footer">
+                        <span class="stat-trend positive">
+                            <i class="bi bi-arrow-up"></i> +{{ total_earned|floatformat:2 }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="stat-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="stat-icon">
+                        <i class="bi bi-lock"></i>
+                    </div>
+                    <div class="stat-label">Locked Balance</div>
+                    <div class="stat-value">{{ wallet.locked_balance|floatformat:2 }} <small>KSH</small></div>
+                    <div class="stat-footer">
+                        <span class="stat-trend">
+                            <i class="bi bi-pie-chart"></i> {{ active_investments|length }} active
+                        </span>
+                    </div>
+                </div>
+
+                <div class="stat-card" data-aos="fade-up" data-aos-delay="300">
+                    <div class="stat-icon">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <div class="stat-label">Total Invested</div>
+                    <div class="stat-value">{{ total_invested|floatformat:2 }} <small>KSH</small></div>
+                    <div class="stat-footer">
+                        <span class="stat-trend positive">
+                            <i class="bi bi-calendar-check"></i> {{ days_left }} days left
+                        </span>
+                    </div>
+                </div>
+
+                <div class="stat-card" data-aos="fade-up" data-aos-delay="400">
+                    <div class="stat-icon">
+                        <i class="bi bi-trophy"></i>
+                    </div>
+                    <div class="stat-label">Referral Earnings</div>
+                    <div class="stat-value">{{ total_referral_earnings|floatformat:2 }} <small>KSH</small></div>
+                    <div class="stat-footer">
+                        <span class="stat-trend">
+                            <i class="bi bi-people"></i> {{ total_referrals }} referrals
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions" data-aos="fade-up">
+                <div class="section-header">
+                    <h3>
+                        <i class="bi bi-lightning-charge-fill"></i>
+                        Quick Actions
+                    </h3>
+                </div>
+                <div class="action-buttons">
+                    <a href="#" class="action-btn" data-bs-toggle="modal" data-bs-target="#depositModal">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>Deposit</span>
+                        <small>Add funds</small>
+                    </a>
+                    <a href="#" class="action-btn" data-bs-toggle="modal" data-bs-target="#withdrawModal">
+                        <i class="bi bi-arrow-up-circle"></i>
+                        <span>Withdraw</span>
+                        <small>Request</small>
+                    </a>
+                    <a href="{% url 'XMR:investments' %}" class="action-btn">
+                        <i class="bi bi-coin"></i>
+                        <span>Invest</span>
+                        <small>Buy tokens</small>
+                    </a>
+                    <a href="#" class="action-btn" onclick="copyReferralLink()">
+                        <i class="bi bi-share"></i>
+                        <span>Refer</span>
+                        <small>Earn 5%</small>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Tabs Container -->
+            <div class="tabs-container" data-aos="fade-up">
+                <ul class="nav nav-tabs" id="accountTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">
+                            <i class="bi bi-speedometer2"></i>
+                            <span class="d-none d-sm-inline">Overview</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">
+                            <i class="bi bi-person-circle"></i>
+                            <span class="d-none d-sm-inline">Profile</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="deposits-tab" data-bs-toggle="tab" data-bs-target="#deposits" type="button" role="tab">
+                            <i class="bi bi-wallet2"></i>
+                            <span class="d-none d-sm-inline">Deposits</span>
+                            {% if pending_deposits > 0 %}
+                            <span class="badge bg-warning ms-1">{{ pending_deposits }}</span>
+                            {% endif %}
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="withdrawals-tab" data-bs-toggle="tab" data-bs-target="#withdrawals" type="button" role="tab">
+                            <i class="bi bi-cash"></i>
+                            <span class="d-none d-sm-inline">Withdrawals</span>
+                            {% if pending_withdrawals > 0 %}
+                            <span class="badge bg-info ms-1">{{ pending_withdrawals }}</span>
+                            {% endif %}
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="transactions-tab" data-bs-toggle="tab" data-bs-target="#transactions" type="button" role="tab">
+                            <i class="bi bi-arrow-left-right"></i>
+                            <span class="d-none d-sm-inline">Transactions</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="investments-tab" data-bs-toggle="tab" data-bs-target="#investments" type="button" role="tab">
+                            <i class="bi bi-graph-up"></i>
+                            <span class="d-none d-sm-inline">Investments</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="referrals-tab" data-bs-toggle="tab" data-bs-target="#referrals" type="button" role="tab">
+                            <i class="bi bi-people"></i>
+                            <span class="d-none d-sm-inline">Referrals</span>
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- Overview Tab -->
+                    <div class="tab-pane active" id="dashboard" role="tabpanel">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="table-container">
+                                    <h5 class="mb-3">Recent Transactions</h5>
+                                    <table class="modern-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>Amount</th>
+                                                <th>Date</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for transaction in transactions|slice:":5" %}
+                                            <tr>
+                                                <td>
+                                                    <span class="badge-status 
+                                                        {% if transaction.transaction_type == 'DEPOSIT' %}verified
+                                                        {% elif transaction.transaction_type == 'WITHDRAWAL' %}processing
+                                                        {% elif transaction.transaction_type == 'PROFIT' %}success
+                                                        {% endif %}">
+                                                        {{ transaction.get_transaction_type_display|truncatechars:8 }}
+                                                    </span>
+                                                </td>
+                                                <td class="amount 
+                                                    {% if transaction.transaction_type == 'WITHDRAWAL' %}amount-negative
+                                                    {% else %}amount-positive{% endif %}">
+                                                    {{ transaction.amount|floatformat:0 }}
+                                                </td>
+                                                <td>{{ transaction.created_at|date:"M d" }}</td>
+                                                <td>
+                                                    <span class="badge-status {% if transaction.status == 'COMPLETED' %}verified{% else %}pending{% endif %}">
+                                                        {{ transaction.status|truncatechars:5 }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="4" class="empty-state">
+                                                    <i class="bi bi-arrow-left-right"></i>
+                                                    <p>No transactions yet</p>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="table-container">
+                                    <h5 class="mb-3">Active Investments</h5>
+                                    <table class="modern-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Token</th>
+                                                <th>Amount</th>
+                                                <th>Progress</th>
+                                                <th>Returns</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for investment in active_investments|slice:":5" %}
+                                            <tr>
+                                                <td><strong>{{ investment.token.name }}</strong></td>
+                                                <td class="amount">{{ investment.amount|floatformat:0 }}</td>
+                                                <td>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <div class="progress flex-grow-1">
+                                                            <div class="progress-bar" style="width: {{ investment.get_progress_percentage }}%"></div>
+                                                        </div>
+                                                        <small>{{ investment.get_progress_percentage|floatformat:0 }}%</small>
+                                                    </div>
+                                                </td>
+                                                <td class="amount-positive">+{{ investment.total_paid|floatformat:0 }}</td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="4" class="empty-state">
+                                                    <i class="bi bi-graph-up"></i>
+                                                    <p>No active investments</p>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Tab -->
+                    <div class="tab-pane" id="profile" role="tabpanel">
+                        <div class="profile-section">
+                            <div class="profile-header">
+                                <div class="profile-avatar-large">
+                                    {{ user.first_name|first|default:user.username|first|upper }}
+                                </div>
+                                <div class="profile-info">
+                                    <h3>{{ user.get_full_name|default:user.username }}</h3>
+                                    <div class="profile-meta">
+                                        <span><i class="bi bi-envelope"></i> {{ user.email }}</span>
+                                        <span><i class="bi bi-phone"></i> {{ profile.phone_number|default:"Not set" }}</span>
+                                        <span><i class="bi bi-calendar"></i> Joined {{ user.date_joined|date:"M Y" }}</span>
+                                    </div>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <span class="verification-badge {% if phone_verified %}verified{% endif %}">
+                                            <i class="bi {% if phone_verified %}bi-check-circle-fill{% else %}bi-x-circle-fill{% endif %}"></i>
+                                            Phone {% if phone_verified %}Verified{% else %}Unverified{% endif %}
+                                        </span>
+                                        <span class="verification-badge {% if id_verified %}verified{% endif %}">
+                                            <i class="bi {% if id_verified %}bi-shield-check{% else %}bi-shield-x{% endif %}"></i>
+                                            ID {% if id_verified %}Verified{% else %}Unverified{% endif %}
+                                        </span>
+                                        <span class="verification-badge">
+                                            <i class="bi bi-gift"></i>
+                                            Referral: <strong>{{ profile.referral_code }}</strong>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Profile Update Form -->
+                            <form method="POST" action="{% url 'XMR:account' %}" class="row g-4">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="update_profile">
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">First Name</label>
+                                        <input type="text" class="form-control" name="first_name" value="{{ user.first_name }}" placeholder="Enter first name">
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">Last Name</label>
+                                        <input type="text" class="form-control" name="last_name" value="{{ user.last_name }}" placeholder="Enter last name">
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">Phone Number</label>
+                                        <input type="text" class="form-control" name="phone" value="{{ profile.phone_number }}" placeholder="e.g., 0712345678">
+                                        <small class="text-muted">Kenyan format (e.g., 0712345678)</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">National ID Name</label>
+                                        <input type="text" class="form-control" name="national_id_name" value="{{ profile.national_id_name }}" placeholder="Name as on ID">
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <button type="submit" class="btn-primary">
+                                        <i class="bi bi-check-circle"></i>
+                                        Update Profile
+                                    </button>
+                                </div>
+                            </form>
+
+                            <!-- Password Change Form -->
+                            <hr class="my-5">
+                            <h5 class="mb-4">Change Password</h5>
+                            <form method="POST" action="{% url 'XMR:account' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="change_password">
+                                
+                                <div class="row g-4">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="form-label">Current Password</label>
+                                            <input type="password" class="form-control" name="current_password" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="form-label">New Password</label>
+                                            <input type="password" class="form-control" name="new_password1" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="form-label">Confirm New Password</label>
+                                            <input type="password" class="form-control" name="new_password2" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn-primary">
+                                            <i class="bi bi-lock"></i>
+                                            Change Password
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <!-- KYC Upload Form -->
+                            <hr class="my-5">
+                            <h5 class="mb-4">KYC Verification Documents</h5>
+                            <form method="POST" action="{% url 'XMR:account' %}" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="upload_kyc">
+                                
+                                <div class="row g-4">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="form-label">ID Front</label>
+                                            <input type="file" class="form-control" name="id_front" accept="image/*">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="form-label">ID Back</label>
+                                            <input type="file" class="form-control" name="id_back" accept="image/*">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="form-label">Selfie with ID</label>
+                                            <input type="file" class="form-control" name="selfie" accept="image/*">
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn-primary">
+                                            <i class="bi bi-upload"></i>
+                                            Upload Documents
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Deposits Tab - COMPLETE with all deposit features -->
+                    <div class="tab-pane" id="deposits" role="tabpanel">
+                        <div class="table-container">
+                            <div class="table-header">
+                                <h5>Deposit History</h5>
+                                <div class="filter-group">
+                                    <select class="filter-select" id="depositFilter">
+                                        <option value="all">All</option>
+                                        <option value="PENDING">Pending</option>
+                                        <option value="VERIFIED">Verified</option>
+                                        <option value="REJECTED">Rejected</option>
+                                        <option value="PROCESSING">Processing</option>
+                                    </select>
+                                    <button class="btn-primary" data-bs-toggle="modal" data-bs-target="#depositModal">
+                                        <i class="bi bi-plus-circle"></i> New Deposit
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Amount</th>
+                                        <th>Phone</th>
+                                        <th>M-Pesa Code</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for deposit in deposits %}
+                                    <tr>
+                                        <td>#{{ deposit.id }}</td>
+                                        <td class="amount">{{ deposit.amount|floatformat:2 }} KSH</td>
+                                        <td>{{ deposit.phone_number }}</td>
+                                        <td><code>{{ deposit.mpesa_code|default:"—" }}</code></td>
+                                        <td>{{ deposit.created_at|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <span class="badge-status 
+                                                {% if deposit.status == 'PENDING' %}pending
+                                                {% elif deposit.status == 'VERIFIED' %}verified
+                                                {% elif deposit.status == 'REJECTED' %}rejected
+                                                {% elif deposit.status == 'PROCESSING' %}processing
+                                                {% endif %}">
+                                                <i class="bi 
+                                                    {% if deposit.status == 'PENDING' %}bi-hourglass-split
+                                                    {% elif deposit.status == 'VERIFIED' %}bi-check-circle
+                                                    {% elif deposit.status == 'REJECTED' %}bi-x-circle
+                                                    {% elif deposit.status == 'PROCESSING' %}bi-gear
+                                                    {% endif %}"></i>
+                                                {{ deposit.status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="empty-state">
+                                            <i class="bi bi-wallet2"></i>
+                                            <h5>No Deposits Yet</h5>
+                                            <p class="text-muted">Make your first deposit to start investing</p>
+                                            <button class="btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#depositModal">
+                                                <i class="bi bi-plus-circle"></i> Make a Deposit
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Withdrawals Tab -->
+                    <div class="tab-pane" id="withdrawals" role="tabpanel">
+                        <div class="table-container">
+                            <div class="table-header">
+                                <h5>Withdrawal History</h5>
+                                <div class="filter-group">
+                                    <select class="filter-select" id="withdrawalFilter">
+                                        <option value="all">All</option>
+                                        <option value="PENDING">Pending</option>
+                                        <option value="PROCESSING">Processing</option>
+                                        <option value="COMPLETED">Completed</option>
+                                        <option value="REJECTED">Rejected</option>
+                                    </select>
+                                    <button class="btn-primary" data-bs-toggle="modal" data-bs-target="#withdrawModal">
+                                        <i class="bi bi-plus-circle"></i> New Withdrawal
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Request ID</th>
+                                        <th>Amount</th>
+                                        <th>Net Amount</th>
+                                        <th>Method</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for withdrawal in withdrawals %}
+                                    <tr>
+                                        <td><code>{{ withdrawal.request_id|truncatechars:8 }}</code></td>
+                                        <td class="amount">{{ withdrawal.amount|floatformat:2 }} KSH</td>
+                                        <td>{{ withdrawal.net_amount|floatformat:2 }} KSH</td>
+                                        <td>{{ withdrawal.payment_method }}</td>
+                                        <td>{{ withdrawal.created_at|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <span class="badge-status 
+                                                {% if withdrawal.status == 'PENDING' %}pending
+                                                {% elif withdrawal.status == 'PROCESSING' %}processing
+                                                {% elif withdrawal.status == 'COMPLETED' %}verified
+                                                {% elif withdrawal.status == 'REJECTED' %}rejected
+                                                {% endif %}">
+                                                {{ withdrawal.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if withdrawal.status == 'PENDING' %}
+                                            <a href="{% url 'XMR:cancel_withdrawal' withdrawal.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this withdrawal request?')">
+                                                <i class="bi bi-x-lg"></i>
+                                            </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="empty-state">
+                                            <i class="bi bi-cash"></i>
+                                            <h5>No Withdrawals Yet</h5>
+                                            <p class="text-muted">Request your first withdrawal</p>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Transactions Tab -->
+                    <div class="tab-pane" id="transactions" role="tabpanel">
+                        <div class="table-container">
+                            <div class="table-header">
+                                <h5>Transaction History</h5>
+                                <select class="filter-select" id="transactionTypeFilter">
+                                    <option value="all">All Types</option>
+                                    <option value="DEPOSIT">Deposits</option>
+                                    <option value="WITHDRAWAL">Withdrawals</option>
+                                    <option value="PROFIT">Profits</option>
+                                    <option value="INVESTMENT">Investments</option>
+                                    <option value="REFERRAL_BONUS">Referral Bonuses</option>
+                                </select>
+                            </div>
+                            
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Description</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in transactions %}
+                                    <tr>
+                                        <td><code>{{ transaction.transaction_id|truncatechars:10 }}</code></td>
+                                        <td>
+                                            <span class="badge-status 
+                                                {% if transaction.transaction_type == 'DEPOSIT' %}verified
+                                                {% elif transaction.transaction_type == 'WITHDRAWAL' %}processing
+                                                {% elif transaction.transaction_type == 'PROFIT' %}success
+                                                {% elif transaction.transaction_type == 'REFERRAL_BONUS' %}info
+                                                {% endif %}">
+                                                {{ transaction.get_transaction_type_display }}
+                                            </span>
+                                        </td>
+                                        <td class="amount 
+                                            {% if transaction.transaction_type == 'WITHDRAWAL' %}amount-negative
+                                            {% elif transaction.transaction_type == 'DEPOSIT' or transaction.transaction_type == 'PROFIT' or transaction.transaction_type == 'REFERRAL_BONUS' %}amount-positive
+                                            {% endif %}">
+                                            {% if transaction.transaction_type == 'WITHDRAWAL' %}-{% else %}+{% endif %}
+                                            {{ transaction.amount|floatformat:2 }} KSH
+                                        </td>
+                                        <td>{{ transaction.description|truncatechars:30 }}</td>
+                                        <td>{{ transaction.created_at|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <span class="badge-status 
+                                                {% if transaction.status == 'COMPLETED' %}verified
+                                                {% elif transaction.status == 'PENDING' %}pending
+                                                {% elif transaction.status == 'FAILED' %}rejected
+                                                {% endif %}">
+                                                {{ transaction.status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="empty-state">
+                                            <i class="bi bi-arrow-left-right"></i>
+                                            <h5>No Transactions</h5>
+                                            <p class="text-muted">Your transaction history will appear here</p>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Investments Tab -->
+                    <div class="tab-pane" id="investments" role="tabpanel">
+                        <div class="table-container">
+                            <div class="table-header">
+                                <h5>Your Investments</h5>
+                                <a href="{% url 'XMR:investments' %}" class="btn-primary">
+                                    <i class="bi bi-plus-circle"></i> New Investment
+                                </a>
+                            </div>
+                            
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Token</th>
+                                        <th>Amount</th>
+                                        <th>Daily Return</th>
+                                        <th>Progress</th>
+                                        <th>Total Paid</th>
+                                        <th>Status</th>
+                                        <th>End Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for investment in active_investments %}
+                                    <tr>
+                                        <td><strong>{{ investment.token.name }}</strong><br><small>{{ investment.token.display_name }}</small></td>
+                                        <td class="amount">{{ investment.amount|floatformat:2 }} KSH</td>
+                                        <td>{{ investment.daily_return|floatformat:2 }} KSH</td>
+                                        <td style="min-width: 150px;">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1">
+                                                    <div class="progress-bar" style="width: {{ investment.get_progress_percentage }}%"></div>
+                                                </div>
+                                                <small>{{ investment.get_progress_percentage|floatformat:0 }}%</small>
+                                            </div>
+                                        </td>
+                                        <td class="amount-positive">{{ investment.total_paid|floatformat:2 }} KSH</td>
+                                        <td>
+                                            <span class="badge-status verified">
+                                                {{ investment.status }}
+                                            </span>
+                                        </td>
+                                        <td>{{ investment.end_date|date:"M d, Y" }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="empty-state">
+                                            <i class="bi bi-graph-up"></i>
+                                            <h5>No Active Investments</h5>
+                                            <p class="text-muted">Start investing in tokens to grow your wealth</p>
+                                            <a href="{% url 'XMR:investments' %}" class="btn-primary mt-3">
+                                                <i class="bi bi-coin"></i> View Tokens
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Referrals Tab -->
+                    <div class="tab-pane" id="referrals" role="tabpanel">
+                        <div class="table-container">
+                            <div class="row g-3 mb-4">
+                                <div class="col-4">
+                                    <div class="stat-card">
+                                        <div class="stat-icon">
+                                            <i class="bi bi-people"></i>
+                                        </div>
+                                        <div class="stat-label">Total</div>
+                                        <div class="stat-value">{{ total_referrals }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="stat-card">
+                                        <div class="stat-icon">
+                                            <i class="bi bi-trophy"></i>
+                                        </div>
+                                        <div class="stat-label">Active</div>
+                                        <div class="stat-value">{{ active_referrals }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="stat-card">
+                                        <div class="stat-icon">
+                                            <i class="bi bi-cash-stack"></i>
+                                        </div>
+                                        <div class="stat-label">Earned</div>
+                                        <div class="stat-value">{{ total_referral_earnings|floatformat:0 }} KSH</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Your Referral Link</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="referralLink" 
+                                           value="{{ request.build_absolute_uri|slice:':-8' }}/signup/?ref={{ profile.referral_code }}" readonly>
+                                    <button class="btn-primary" onclick="copyReferralLink()">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted mt-2 d-block">Share this link with friends. You earn 5% commission on their first deposit!</small>
+                            </div>
+                            
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Joined</th>
+                                        <th>First Deposit</th>
+                                        <th>Bonus</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for referral in referrals %}
+                                    <tr>
+                                        <td>{{ referral.user.username }}</td>
+                                        <td>{{ referral.created_at|date:"M d, Y" }}</td>
+                                        <td class="amount">{{ referral.first_deposit|floatformat:0 }} KSH</td>
+                                        <td class="amount-positive">{{ referral.bonus_earned|floatformat:0 }} KSH</td>
+                                        <td>
+                                            <span class="badge-status {% if referral.is_active %}verified{% else %}pending{% endif %}">
+                                                {% if referral.is_active %}Active{% else %}Inactive{% endif %}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="empty-state">
+                                            <i class="bi bi-people"></i>
+                                            <h5>No Referrals Yet</h5>
+                                            <p class="text-muted">Share your referral link to earn 5% commission</p>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ========== DEPOSIT MODAL - COMPLETE with all features ========== -->
+<div class="modal fade" id="depositModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Make a Deposit</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Complete M-Pesa Instructions -->
+                <div class="payment-instructions">
+                    <h6><i class="bi bi-info-circle me-2"></i>M-Pesa Payment Instructions</h6>
+                    <p>1. Go to M-Pesa on your phone</p>
+                    <p>2. Select <strong>Lipa na M-Pesa</strong></p>
+                    <p>3. Select <strong>Pay Bill</strong></p>
+                    <p>4. Enter Business No: <strong class="text-primary">{{ paybill }}</strong></p>
+                    <p>5. Enter Account No: <strong class="text-primary">{{ account_no }}</strong></p>
+                    <p>6. Enter Amount and complete payment</p>
+                    <p class="mt-2 mb-0 text-warning"><i class="bi bi-exclamation-triangle"></i> Minimum deposit: <strong>{{ min_deposit }} KSH</strong></p>
+                </div>
+                
+                <form method="POST" action="{% url 'XMR:create_deposit' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label class="form-label">Amount (KSH) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" name="amount" min="{{ min_deposit }}" step="0.01" required>
+                        <small class="text-muted">Minimum deposit: {{ min_deposit }} KSH</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Phone Number Used <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="phone_number" value="{{ profile.phone_number }}" placeholder="e.g., 0712345678" required>
+                        <small class="text-muted">The phone number you used for M-Pesa transaction</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">M-Pesa Confirmation Message</label>
+                        <textarea class="form-control" name="mpesa_message" rows="3" placeholder="Paste the complete M-Pesa confirmation message here..."></textarea>
+                        <small class="text-muted">Paste the message you received from M-Pesa (helps with automatic verification)</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Screenshot (Optional)</label>
+                        <input type="file" class="form-control" name="mpesa_screenshot" accept="image/*">
+                        <small class="text-muted">Upload a screenshot of the M-Pesa confirmation</small>
+                    </div>
+                    
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-shield-check me-2"></i>
+                        <small>Your deposit will be verified by admin before funds are added to your wallet.</small>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary w-100">
+                        <i class="bi bi-send"></i>
+                        Submit Deposit Request
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Withdraw Modal -->
+<div class="modal fade" id="withdrawModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Request Withdrawal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle fs-4"></i>
+                    <div>
+                        <strong>Available Balance:</strong> {{ wallet.available_balance|floatformat:2 }} KSH<br>
+                        <small>Tax: 5% will be deducted from withdrawal amount</small>
+                    </div>
+                </div>
+                
+                <form method="POST" action="{% url 'XMR:create_withdrawal' %}">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label class="form-label">Amount (KSH) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" name="amount" min="{{ min_withdrawal }}" max="{{ wallet.available_balance }}" step="0.01" required id="withdrawAmount">
+                        <small class="text-muted">Minimum: {{ min_withdrawal }} KSH | You'll receive: <span id="netAmount">0.00</span> KSH after 5% tax</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Payment Method <span class="text-danger">*</span></label>
+                        <select class="form-control" name="payment_method" id="paymentMethod" required>
+                            <option value="MPESA">M-Pesa</option>
+                            <option value="BANK">Bank Transfer</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="mpesaField">
+                        <label class="form-label">M-Pesa Phone Number <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="phone_number" value="{{ profile.phone_number }}" placeholder="e.g., 0712345678">
+                        <small class="text-muted">The phone number to receive M-Pesa payment</small>
+                    </div>
+                    
+                    <div class="form-group" id="bankField" style="display: none;">
+                        <label class="form-label">Bank Account Details <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="bank_details" rows="3" placeholder="Bank Name, Account Number, Account Holder Name"></textarea>
+                        <small class="text-muted">Provide complete bank details for transfer</small>
+                    </div>
+                    
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-shield-check me-2"></i>
+                        <small>Withdrawals are processed by admin and may take 1-2 business days.</small>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary w-100">
+                        <i class="bi bi-send"></i>
+                        Submit Withdrawal Request
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+<script>
+    // Initialize AOS
+    AOS.init({
+        duration: 600,
+        once: true
+    });
+
+    // Mobile Menu
+    const mobileBtn = document.getElementById('mobileMenuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    mobileBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('mobile-open');
+        overlay.classList.toggle('active');
+        mobileBtn.classList.toggle('active');
+    });
+    
+    overlay.addEventListener('click', () => {
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+        mobileBtn.classList.remove('active');
+    });
+
+    // Sidebar Toggle
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const mainContent = document.getElementById('mainContent');
+
+    sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+        
+        const icon = sidebarToggle.querySelector('i');
+        icon.className = sidebar.classList.contains('collapsed') ? 'bi bi-chevron-right' : 'bi bi-chevron-left';
+    });
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+    
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    html.setAttribute('data-bs-theme', savedTheme);
+    
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = html.getAttribute('data-bs-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-bs-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    });
+
+    // Tab Switching
+    function switchTab(tabId) {
+        const tab = document.getElementById(tabId);
+        if (tab) {
+            const tabInstance = new bootstrap.Tab(tab);
+            tabInstance.show();
+            
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+        }
+        
+        // Close mobile menu after selection
+        if (window.innerWidth <= 768) {
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
+            mobileBtn.classList.remove('active');
+        }
+    }
+
+    // Payment Method Toggle
+    document.getElementById('paymentMethod')?.addEventListener('change', function() {
+        const mpesaField = document.getElementById('mpesaField');
+        const bankField = document.getElementById('bankField');
+        
+        if (this.value === 'MPESA') {
+            mpesaField.style.display = 'block';
+            bankField.style.display = 'none';
+            mpesaField.querySelector('input').required = true;
+            bankField.querySelector('textarea').required = false;
+        } else {
+            mpesaField.style.display = 'none';
+            bankField.style.display = 'block';
+            mpesaField.querySelector('input').required = false;
+            bankField.querySelector('textarea').required = true;
+        }
+    });
+
+    // Calculate Net Amount for Withdrawal
+    document.getElementById('withdrawAmount')?.addEventListener('input', function() {
+        const amount = parseFloat(this.value) || 0;
+        const netAmount = amount * 0.95; // 5% tax
+        document.getElementById('netAmount').textContent = netAmount.toFixed(2);
+    });
+
+    // Copy Referral Link
+    function copyReferralLink() {
+        const linkInput = document.getElementById('referralLink');
+        if (linkInput) {
+            linkInput.select();
+            document.execCommand('copy');
+            showToast('Referral link copied to clipboard!', 'success');
+        }
+    }
+
+    // Toast Notifications
+    function showToast(message, type = 'success') {
+        const toastContainer = document.getElementById('toastContainer');
+        const toastId = 'toast-' + Date.now();
+        
+        const toast = document.createElement('div');
+        toast.id = toastId;
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <div class="toast-body">
+                <i class="bi ${type === 'success' ? 'bi-check-circle' : 'bi-info-circle'}"></i>
+                <span>${message}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        toastContainer.appendChild(toast);
+        new bootstrap.Toast(toast, { delay: 3000 }).show();
+        
+        toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    }
+
+    // Filters
+    document.getElementById('depositFilter')?.addEventListener('change', function() {
+        filterTable('deposits', this.value);
+    });
+    
+    document.getElementById('withdrawalFilter')?.addEventListener('change', function() {
+        filterTable('withdrawals', this.value);
+    });
+    
+    document.getElementById('transactionTypeFilter')?.addEventListener('change', function() {
+        filterTable('transactions', this.value);
+    });
+    
+    function filterTable(tableId, filterValue) {
+        const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+        rows.forEach(row => {
+            if (filterValue === 'all') {
+                row.style.display = '';
+                return;
+            }
+            const statusCell = row.querySelector('.badge-status');
+            if (statusCell && statusCell.textContent.includes(filterValue)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Show Messages
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if messages %}
+            {% for message in messages %}
+                showToast('{{ message }}', '{{ message.tags }}');
+            {% endfor %}
+        {% endif %}
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
+            mobileBtn.classList.remove('active');
+        }
+    });
+</script>
+
+</body>
+</html>

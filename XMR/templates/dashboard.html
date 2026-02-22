@@ -1,0 +1,772 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en" class="layout-navbar-fixed layout-menu-fixed layout-compact" dir="ltr" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Monero · private · decentralized · live</title>
+    <meta name="description" content="Monero dashboard – private cryptocurrency transactions & portfolio tracker" />
+    
+    <!-- Boxicons & Font Awesome (clean, minimal) -->
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    
+    <!-- ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* 🌞 LIGHT THEME — fresh, airy, Monero accent */
+            --monero: #f15a24;          /* Monero orange */
+            --monero-glow: #ff8a5c;
+            --monero-dark: #c6471c;
+            --accent-teal: #007a78;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            
+            --bg-body: #f6f9fc;
+            --bg-card: #ffffff;
+            --bg-sidebar: #ffffff;
+            --bg-navbar: #ffffffd9;
+            --border-light: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            
+            --shadow-card: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.02);
+            --shadow-glow: 0 8px 20px rgba(241, 90, 36, 0.15);
+            --radius: 20px;
+            --radius-sm: 14px;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-body);
+            color: var(--text-primary);
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(241, 90, 36, 0.2); }
+            50% { box-shadow: 0 0 0 8px rgba(241, 90, 36, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(241, 90, 36, 0); }
+        }
+        .price-update {
+            animation: pulseGlow 0.5s ease-out;
+        }
+        .up { color: var(--success); font-weight: 500; }
+        .down { color: var(--danger); font-weight: 500; }
+
+        /* layout */
+        .layout-wrapper, .layout-container {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .layout-menu {
+            width: 280px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-light);
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 2px 0 20px rgba(0,0,0,0.02);
+            scrollbar-width: thin;
+            scrollbar-color: var(--monero) var(--border-light);
+            transition: transform 0.2s ease;
+        }
+        .layout-menu::-webkit-scrollbar { width: 5px; }
+        .layout-menu::-webkit-scrollbar-track { background: var(--border-light); }
+        .layout-menu::-webkit-scrollbar-thumb { background: var(--monero); border-radius: 20px; }
+
+        .layout-page {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: calc(100% - 280px);
+        }
+
+        /* brand */
+        .app-brand {
+            padding: 24px 20px;
+            border-bottom: 1px solid var(--border-light);
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .app-brand-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+        .app-brand-logo svg {
+            width: 36px;
+            height: auto;
+            color: var(--monero);
+            filter: drop-shadow(0 2px 6px rgba(241,90,36,0.1));
+        }
+        .app-brand-text {
+            font-size: 1.7rem;
+            font-weight: 700;
+            background: linear-gradient(130deg, var(--monero), #ffb347);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        .layout-menu-toggle {
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--bg-body); border-radius: 50%;
+            color: var(--text-secondary); border: 1px solid var(--border-light);
+            transition: 0.2s;
+            text-decoration: none;
+        }
+        .layout-menu-toggle:hover {
+            background: var(--monero); color: white; border-color: var(--monero);
+            transform: rotate(180deg);
+        }
+
+        /* menu items */
+        .menu-inner { list-style: none; padding: 16px 0; margin: 0; }
+        .menu-item { margin: 4px 10px; }
+        .menu-link {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 18px; border-radius: var(--radius-sm);
+            color: var(--text-secondary); text-decoration: none;
+            transition: 0.2s; font-weight: 500;
+        }
+        .menu-link i { font-size: 1.5rem; color: var(--text-muted); min-width: 28px; }
+        .menu-link:hover { background: rgba(241, 90, 36, 0.04); color: var(--monero); }
+        .menu-link:hover i { color: var(--monero); }
+        .menu-item.active > .menu-link {
+            background: rgba(241, 90, 36, 0.08);
+            color: var(--monero); font-weight: 600;
+        }
+        .menu-item.active .menu-link i { color: var(--monero); }
+        .badge {
+            margin-left: auto; background: var(--monero); color: white;
+            padding: 4px 8px; border-radius: 40px; font-size: 0.7rem; font-weight: 600;
+        }
+        .menu-header {
+            padding: 20px 20px 8px; color: var(--text-muted);
+            text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.8px;
+        }
+        .menu-divider { margin: 16px 20px; border-top: 1px solid var(--border-light); }
+
+        /* sidebar user */
+        .sidebar-user {
+            padding: 20px; border-top: 1px solid var(--border-light);
+            display: flex; align-items: center; gap: 12px;
+        }
+        .avatar {
+            width: 45px; height: 45px; border-radius: 50%;
+            background: var(--monero); display: flex; align-items: center; justify-content: center;
+            font-weight: 600; color: white; text-transform: uppercase;
+        }
+        .avatar-online { position: relative; }
+        .avatar-online::after {
+            content: ''; position: absolute; bottom: 2px; right: 2px;
+            width: 12px; height: 12px; background: var(--success); border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        /* ===== NAVBAR ===== */
+        .layout-navbar {
+            background: var(--bg-navbar);
+            padding: 0 24px; min-height: 80px;
+            border-bottom: 1px solid var(--border-light);
+            backdrop-filter: blur(8px);
+            display: flex; align-items: center;
+            position: sticky; top: 0; z-index: 99;
+        }
+        .navbar-nav-right {
+            display: flex; align-items: center; justify-content: space-between; width: 100%;
+        }
+        .search-toggler {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 20px; background: white; border-radius: 40px;
+            border: 1px solid var(--border-light); color: var(--text-secondary);
+            min-width: 280px; transition: 0.2s;
+        }
+        .search-toggler:hover { border-color: var(--monero); color: var(--monero); background: #fff; }
+        .navbar-nav { display: flex; align-items: center; list-style: none; gap: 12px; }
+        .nav-link {
+            display: flex; align-items: center; padding: 10px 16px;
+            color: var(--text-secondary); border-radius: 40px; transition: 0.2s;
+            text-decoration: none;
+        }
+        .nav-link:hover { background: rgba(241,90,36,0.04); color: var(--monero); }
+
+        /* crypto pills */
+        .crypto-mini {
+            display: flex; align-items: center; gap: 8px;
+            background: white; padding: 6px 14px; border-radius: 40px;
+            border: 1px solid var(--border-light);
+        }
+        .crypto-mini span { font-weight: 600; }
+
+        /* ticker */
+        .ticker-container {
+            background: white; border-bottom: 1px solid var(--border-light);
+            padding: 12px 24px; overflow: hidden; white-space: nowrap;
+        }
+        .ticker-wrapper {
+            display: inline-block; animation: ticker 40s linear infinite;
+        }
+        .ticker-item { display: inline-block; margin-right: 40px; color: var(--text-secondary); }
+        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        /* cards */
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border-light);
+            border-radius: var(--radius); box-shadow: var(--shadow-card);
+            transition: 0.15s; height: 100%;
+        }
+        .card:hover { border-color: var(--monero); box-shadow: var(--shadow-glow); }
+        .card-header {
+            padding: 20px 24px; background: transparent;
+            border-bottom: 1px solid var(--border-light);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .card-title { font-size: 1.2rem; font-weight: 600; color: var(--text-primary); }
+        .card-body { padding: 24px; }
+
+        /* monero icon */
+        .xmr-icon {
+            background: rgba(241,90,36,0.08); color: var(--monero);
+            width: 55px; height: 55px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; font-weight: 600;
+        }
+
+        /* flex row simulation */
+        .row-flex {
+            display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 30px;
+        }
+        .col {
+            flex: 1 1 calc(33.333% - 16px); min-width: 280px;
+        }
+
+        /* buttons */
+        .btn {
+            display: inline-block; padding: 12px 24px; border-radius: 40px;
+            font-weight: 600; text-decoration: none; border: none; cursor: pointer;
+            background: transparent; transition: 0.15s; text-align: center;
+            font-size: 0.95rem;
+        }
+        .btn-primary {
+            background: var(--monero);
+            color: white; box-shadow: 0 4px 12px rgba(241,90,36,0.3);
+        }
+        .btn-primary:hover { background: var(--monero-dark); transform: translateY(-2px); }
+        .btn-outline {
+            border: 1.5px solid var(--monero); color: var(--monero);
+            background: white;
+        }
+        .btn-outline:hover { background: var(--monero); color: white; }
+
+        /* tables */
+        .table { width: 100%; border-collapse: collapse; }
+        .table th { text-align: left; padding: 16px 8px; color: var(--text-muted); border-bottom: 1px solid var(--border-light); font-weight: 500; }
+        .table td { padding: 16px 8px; border-bottom: 1px solid var(--border-light); color: var(--text-secondary); }
+
+        /* timeline */
+        .timeline { list-style: none; position: relative; }
+        .timeline::before {
+            content: ''; position: absolute; left: 8px; top: 0; height: 100%;
+            width: 2px; background: var(--border-light);
+        }
+        .timeline-item { position: relative; padding-left: 35px; margin-bottom: 25px; }
+        .timeline-point {
+            position: absolute; left: 0; top: 5px; width: 16px; height: 16px;
+            border-radius: 50%; background: var(--monero); border: 3px solid white;
+        }
+
+        /* mobile overlay */
+        .layout-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.2); backdrop-filter: blur(2px); z-index: 999;
+            display: none;
+        }
+        .menu-mobile-toggler { display: none; }
+
+        @media (max-width: 992px) {
+            .layout-menu {
+                position: fixed; left: 0; top: 0; transform: translateX(-100%);
+                z-index: 1001; height: 100vh;
+            }
+            .layout-menu.show { transform: translateX(0); }
+            .layout-page { max-width: 100%; margin-left: 0; }
+            .menu-mobile-toggler {
+                display: block; position: fixed; bottom: 20px; left: 20px; z-index: 99;
+            }
+            .layout-overlay.show { display: block; }
+            .col { flex: 1 1 100%; }
+            .search-toggler { min-width: auto; }
+        }
+
+        /* utilities */
+        .d-flex { display: flex; align-items: center; gap: 12px; }
+        .flex-wrap { flex-wrap: wrap; }
+        .justify-between { justify-content: space-between; }
+        .text-muted { color: var(--text-muted); }
+        .text-monero { color: var(--monero); }
+        .mb-3 { margin-bottom: 12px; }
+        .mb-4 { margin-bottom: 24px; }
+        .p-4 { padding: 24px; }
+        .gap-2 { gap: 8px; }
+        .w-100 { width: 100%; }
+        .fw-600 { font-weight: 600; }
+    </style>
+</head>
+<body>
+<div class="layout-wrapper">
+    <div class="layout-container">
+
+        <!-- ========== SIDEBAR (light & crisp) ========== -->
+        <aside id="layout-menu" class="layout-menu menu-vertical">
+            <div class="app-brand">
+                <a href="{% url 'XMR:index' %}" class="app-brand-link">
+                    <span class="app-brand-logo">
+                        <svg width="36" viewBox="0 0 256 256" fill="currentColor">
+                            <circle cx="128" cy="128" r="110" stroke="currentColor" stroke-width="12" fill="none"/>
+                            <path d="M48 128 L88 168 L128 128 L168 168 L208 128" stroke="currentColor" stroke-width="16" fill="none"/>
+                        </svg>
+                    </span>
+                    <span class="app-brand-text">Monero</span>
+                </a>
+                <a href="#" class="layout-menu-toggle" id="sidebarToggle"><i class="bx bx-chevron-left"></i></a>
+            </div>
+            <ul class="menu-inner">
+                <li class="menu-item active"><a href="{% url 'XMR:dashboard' %}" class="menu-link"><i class="bx bx-grid-alt"></i><span>Dashboard</span><span class="badge">LIVE</span></a></li>
+                <li class="menu-item"><a href="{% url 'XMR:investments' %}" class="menu-link"><i class="bx bx-lock-alt"></i><span>Privacy send</span></a></li>
+                <li class="menu-item"><a href="{% url 'XMR:investments' %}" class="menu-link"><i class="bx bx-transfer"></i><span>Invest</span></a></li>
+                <li class="menu-header"><span>WALLET</span></li>
+                <li class="menu-item"><a href="{% url 'XMR:account' %}" class="menu-link"><i class="bx bx-down-arrow-circle"></i><span>Receive (XMR)</span><span class="badge">stealth</span></a></li>
+                <li class="menu-item"><a href="{% url 'XMR:account' %}" class="menu-link"><i class="bx bx-up-arrow-circle"></i><span>Send</span></a></li>
+                <li class="menu-item"><a href="{% url 'XMR:investments' %}" class="menu-link"><i class="bx bx-wallet"></i><span>Portfolio</span><span class="badge">Ᵽ96k</span></a></li>
+                <li class="menu-item"><a href="{% url 'XMR:transactions' %}" class="menu-link"><i class="bx bx-history"></i><span>Transactions</span></a></li>
+                <li class="menu-header"><span>PRIVACY</span></li>
+                <li class="menu-item"><a href="#" class="menu-link"><i class="bx bx-shield"></i><span>Ring signatures</span></a></li>
+                <li class="menu-item"><a href="#" class="menu-link"><i class="bx bx-chip"></i><span>Node & daemon</span></a></li>
+                <li class="menu-divider"></li>
+                <li class="menu-item"><a href="{% url 'XMR:logout' %}" class="menu-link" style="color: var(--danger);"><i class="bx bx-log-out" style="color:var(--danger);"></i><span>Lock wallet</span></a></li>
+            </ul>
+            <div class="sidebar-user">
+                <div class="avatar avatar-online">XMR</div>
+                <div><div style="font-weight:600;">monero.{{ user.first_name|default:"user" }}</div><div style="font-size:0.8rem; color:var(--text-muted);">view only</div></div>
+                <i class="bx bx-dots-vertical-rounded" style="margin-left:auto; color:var(--text-muted);"></i>
+            </div>
+        </aside>
+
+        <!-- mobile toggler & overlay -->
+        <div class="menu-mobile-toggler"><a href="#" id="mobileMenuToggle" style="background:var(--monero); color:white; padding:15px; border-radius:50%; display:inline-flex;"><i class="bx bx-menu" style="font-size:1.8rem;"></i></a></div>
+        <div class="layout-overlay" id="layoutOverlay"></div>
+
+        <!-- ========== MAIN PAGE ========== -->
+        <div class="layout-page">
+
+            <!-- navbar -->
+            <nav class="layout-navbar navbar-detached">
+                <div class="navbar-nav-right">
+                    <div class="navbar-search-wrapper">
+                        <a href="#" class="search-toggler"><i class="bx bx-search"></i><span>Search transactions...</span></a>
+                    </div>
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <div class="crypto-mini">
+                                <i class="bx bxl-bitcoin" style="color:#f7931a;"></i> <span class="btc-value fw-600">$43,521</span>
+                                <span class="btc-change up">+2.4%</span>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <div class="crypto-mini">
+                                <span style="color:var(--monero); font-weight:700;">XMR</span> <span class="xmr-value fw-600">$168.42</span>
+                                <span class="xmr-change up">+3.1%</span>
+                            </div>
+                        </li>
+                        <li class="nav-item"><a href="#" class="nav-link"><i class="bx bx-bell"></i></a></li>
+                        <li class="nav-item">
+                            <a href="{% url 'XMR:account' %}" class="nav-link">
+                                <div class="avatar" style="width:40px; height:40px;">{{ user.first_name|first|default:"X" }}</div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- live ticker -->
+            <div class="ticker-container">
+                <div class="ticker-wrapper" id="ticker">
+                    <span class="ticker-item"><span style="color:var(--monero); font-weight:600;">XMR</span> <span class="ticker-xmr">$168.42</span> <span class="up">+3.1%</span></span>
+                    <span class="ticker-item"><span style="color:#f7931a;">BTC</span> <span class="ticker-btc">$43,521</span> <span class="up">+2.4%</span></span>
+                    <span class="ticker-item"><span style="color:#627eea;">ETH</span> <span class="ticker-eth">$2,891</span> <span class="up">+1.8%</span></span>
+                    <span class="ticker-item"><span style="color:var(--accent-teal);">XMR</span> <span class="ticker-xmr2">$168.42</span> <span class="up">+3.1%</span></span>
+                </div>
+            </div>
+
+            <!-- content -->
+            <div class="content-wrapper" style="padding:24px;">
+                <!-- welcome + quick actions -->
+                <div class="row-flex">
+                    <div class="col" style="flex:2;">
+                        <div class="card">
+                            <div class="card-body d-flex justify-between flex-wrap">
+                                <div>
+                                    <h2 style="font-size:2rem; font-weight:600;">👋 welcome back, {{ user.first_name|default:"Alex" }}</h2>
+                                    <p style="color:var(--text-secondary);">your XMR balance <span class="up" id="portfolioChange">+6.2%</span> (last 24h)</p>
+                                    <div class="d-flex flex-wrap gap-2" style="margin-top:24px;">
+                                        <div><small class="text-muted">total XMR</small><h3 id="totalXmr">96.42 XMR</h3></div>
+                                        <div><small class="text-muted">≈ USD</small><h3 id="totalUsd">$16,235.00</h3></div>
+                                        <div><small class="text-muted">XMR price</small><h3 style="color:var(--monero);" id="xmrPrice">$168.42</h3></div>
+                                    </div>
+                                </div>
+                                <div style="font-size:5rem; opacity:0.1; color:var(--monero);">Ᵽ</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col" style="flex:1;">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">quick actions</h5>
+                                <div class="d-flex gap-2 flex-wrap" style="margin-top:20px;">
+                                    <a href="{% url 'XMR:account' %}" class="btn btn-outline" style="flex:1;"><i class="bx bx-down-arrow-circle"></i> receive</a>
+                                    <a href="{% url 'XMR:account' %}" class="btn btn-outline" style="flex:1;"><i class="bx bx-up-arrow-circle"></i> send</a>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap mt-3">
+                                    <a href="{% url 'XMR:investments' %}" class="btn btn-primary" style="flex:1;"><i class="bx bx-transfer"></i>Invest</a>
+                                    <a href="{% url 'XMR:transactions' %}" class="btn btn-outline" style="flex:1;"><i class="bx bx-history"></i> txs</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- portfolio cards -->
+                <div class="row-flex" id="portfolioCards">
+                    <div class="col">
+                        <div class="card crypto-card" data-crypto="xmr">
+                            <div class="card-body">
+                                <div class="d-flex justify-between" style="margin-bottom:16px;">
+                                    <div class="d-flex"><span class="xmr-icon">Ᵽ</span><div style="margin-left:15px;"><h4>Monero</h4><small class="text-muted">XMR · ringCT</small></div></div>
+                                    <div style="text-align:right;"><h4 class="xmr-price up">$168.42</h4><small class="xmr-change up">+3.1%</small></div>
+                                </div>
+                                <div class="d-flex justify-between"><span>balance <span class="xmr-balance">96.42</span> XMR</span> <span class="xmr-usd-value">$16,235</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card crypto-card" data-crypto="wow">
+                            <div class="card-body">
+                                <div class="d-flex justify-between"><div class="d-flex"><span class="xmr-icon" style="background:#f0e6ff; color:#a855f7;">Ȥ</span><div style="margin-left:15px;"><h4>Wownero</h4><small>WOW · meme</small></div></div><div><h4 class="wow-price up">$0.284</h4><small class="up">+12%</small></div></div>
+                                <div class="d-flex justify-between"><span>balance 1250 WOW</span> <span>$355</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card crypto-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-between"><div class="d-flex"><span class="xmr-icon" style="background:#e6f0ff; color:#2563eb;">₿</span><div style="margin-left:15px;"><h4>Bitcoin</h4><small>BTC · wrapped</small></div></div><div><h4 class="btc-price up">$43,521</h4><small class="up">+2.4%</small></div></div>
+                                <div class="d-flex justify-between"><span>balance 0.045 BTC</span> <span>$1,958</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- charts row -->
+                <div class="row-flex">
+                    <div class="col" style="flex:2;">
+                        <div class="card">
+                            <div class="card-header"><h5 class="card-title">XMR/USD · last 24h (private tx volume)</h5></div>
+                            <div class="card-body"><div id="priceChart" style="height:300px;"></div></div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card">
+                            <div class="card-header"><h5 class="card-title">portfolio distribution</h5></div>
+                            <div class="card-body">
+                                <div id="portfolioChart" style="height:220px;"></div>
+                                <div class="mt-3">
+                                    <div class="d-flex justify-between"><span><span style="color:var(--monero);">●</span> Monero</span> <span id="xmrShare">68%</span></div>
+                                    <div class="d-flex justify-between"><span><span style="color:#2563eb;">●</span> Bitcoin</span> <span id="btcShare">12%</span></div>
+                                    <div class="d-flex justify-between"><span><span style="color:#a855f7;">●</span> Wownero</span> <span id="wowShare">8%</span></div>
+                                    <div class="d-flex justify-between"><span><span style="color:#94a3b8;">●</span> other</span> <span id="otherShare">12%</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- recent tx + activity -->
+                <div class="row-flex">
+                    <div class="col" style="flex:1.5;">
+                        <div class="card">
+                            <div class="card-header"><h5 class="card-title">recent transactions (shielded)</h5><a href="{% url 'XMR:transactions' %}" style="color:var(--monero);">all →</a></div>
+                            <div class="card-body">
+                                <table class="table">
+                                    <thead><tr><th>TXID short</th><th>type</th><th>amount</th><th>status</th></tr></thead>
+                                    <tbody id="txBody">
+                                        <tr><td>f3a8...b29c</td><td class="up">receive</td><td>4.2 XMR</td><td><span class="badge" style="background:var(--success);">confirmed</span></td></tr>
+                                        <tr><td>1e7f...4a21</td><td class="down">send</td><td>0.5 XMR</td><td><span class="badge" style="background:var(--warning);">pending</span></td></tr>
+                                        <tr><td>a9d3...f102</td><td class="up">receive</td><td>1.75 XMR</td><td><span class="badge" style="background:var(--monero);">completed</span></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card">
+                            <div class="card-header"><h5 class="card-title">live activity (mempool)</h5></div>
+                            <div class="card-body">
+                                <ul class="timeline" id="activityTimeline">
+                                    <li class="timeline-item"><span class="timeline-point"></span><div><strong>ring signature verified</strong><br><small class="text-muted">2 min ago</small></div></li>
+                                    <li class="timeline-item"><span class="timeline-point" style="background:var(--warning);"></span><div><strong>new stealth address</strong><br><small class="text-muted">15 min ago</small></div></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- footer -->
+                <footer class="d-flex justify-between" style="margin-top:30px; padding:24px 0; color:var(--text-muted); border-top:1px solid var(--border-light);">
+                    <span>© 2026 Monero community · all private</span>
+                    <span>
+                        <a href="#" class="footer-link" style="color:var(--text-secondary); margin-left:20px;">terms</a>
+                        <a href="#" style="color:var(--text-secondary); margin-left:20px;">privacy</a>
+                    </span>
+                </footer>
+            </div>
+        </div>
+    </div>
+    <!-- floating trade button -->
+    <div class="buy-now" style="position:fixed; bottom:20px; right:20px; z-index:99;">
+        <a href="{% url 'XMR:deposits' %}" class="btn btn-primary" style="padding:15px 30px; font-size:1.1rem;">
+            <i class="bx bx-send"></i> Recharge
+        </a>
+    </div>
+</div>
+
+<!-- enhanced JavaScript with full Django support -->
+<script>
+    (function() {
+        // Django context integration
+        const userData = {
+            firstName: "{{ user.first_name|escapejs }}",
+            lastName: "{{ user.last_name|escapejs }}",
+            isAuthenticated: {% if user.is_authenticated %}true{% else %}false{% endif %}
+        };
+
+        // ========== STATE ==========
+        const state = {
+            xmr: { price: 168.42, change: 3.1, balance: 96.42 },
+            btc: { price: 43521, change: 2.4, balance: 0.045 },
+            wow: { price: 0.284, change: 12.0, balance: 1250 }
+        };
+
+        // helper: format USD
+        const formatUSD = (val) => '$' + val.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        const formatLargeUSD = (val) => '$' + val.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+        // DOM elements map
+        const elements = {
+            xmrValue: document.querySelector('.xmr-value'),
+            xmrChange: document.querySelector('.xmr-change'),
+            xmrPrice: document.querySelector('.xmr-price'),
+            xmrBalance: document.querySelector('.xmr-balance'),
+            xmrUsdValue: document.querySelector('.xmr-usd-value'),
+            totalXmr: document.getElementById('totalXmr'),
+            totalUsd: document.getElementById('totalUsd'),
+            xmrPriceSpan: document.getElementById('xmrPrice'),
+            btcValue: document.querySelector('.btc-value'),
+            btcChange: document.querySelector('.btc-change'),
+            btcPrice: document.querySelector('.btc-price'),
+            wowPrice: document.querySelector('.wow-price'),
+            tickerXmr: document.querySelector('.ticker-xmr'),
+            tickerBtc: document.querySelector('.ticker-btc'),
+            portfolioChange: document.getElementById('portfolioChange'),
+            xmrShare: document.getElementById('xmrShare'),
+            btcShare: document.getElementById('btcShare'),
+            wowShare: document.getElementById('wowShare'),
+            otherShare: document.getElementById('otherShare'),
+        };
+
+        // Update all UI from state
+        function refreshUI() {
+            const totalUsd = state.xmr.price * state.xmr.balance + state.btc.price * state.btc.balance + state.wow.price * state.wow.balance;
+            const xmrShareVal = ((state.xmr.price * state.xmr.balance) / totalUsd * 100).toFixed(0);
+            const btcShareVal = ((state.btc.price * state.btc.balance) / totalUsd * 100).toFixed(0);
+            const wowShareVal = ((state.wow.price * state.wow.balance) / totalUsd * 100).toFixed(0);
+            const otherShareVal = (100 - xmrShareVal - btcShareVal - wowShareVal).toFixed(0);
+
+            if (elements.xmrValue) elements.xmrValue.innerText = formatUSD(state.xmr.price);
+            if (elements.xmrChange) {
+                elements.xmrChange.innerText = (state.xmr.change > 0 ? '+' : '') + state.xmr.change.toFixed(1) + '%';
+                elements.xmrChange.className = state.xmr.change >= 0 ? 'up' : 'down';
+            }
+            if (elements.xmrPrice) {
+                elements.xmrPrice.innerText = formatUSD(state.xmr.price);
+                elements.xmrPrice.className = state.xmr.change >= 0 ? 'up' : 'down';
+            }
+            if (elements.xmrBalance) elements.xmrBalance.innerText = state.xmr.balance.toFixed(2);
+            if (elements.xmrUsdValue) elements.xmrUsdValue.innerText = formatUSD(state.xmr.price * state.xmr.balance);
+            if (elements.totalXmr) elements.totalXmr.innerText = state.xmr.balance.toFixed(2) + ' XMR';
+            if (elements.totalUsd) elements.totalUsd.innerText = formatLargeUSD(totalUsd);
+            if (elements.xmrPriceSpan) elements.xmrPriceSpan.innerText = formatUSD(state.xmr.price);
+            if (elements.btcValue) elements.btcValue.innerText = formatUSD(state.btc.price);
+            if (elements.btcChange) {
+                elements.btcChange.innerText = (state.btc.change > 0 ? '+' : '') + state.btc.change.toFixed(1) + '%';
+                elements.btcChange.className = state.btc.change >= 0 ? 'up' : 'down';
+            }
+            if (elements.btcPrice) {
+                elements.btcPrice.innerText = formatUSD(state.btc.price);
+                elements.btcPrice.className = state.btc.change >= 0 ? 'up' : 'down';
+            }
+            if (elements.wowPrice) {
+                elements.wowPrice.innerText = formatUSD(state.wow.price);
+                elements.wowPrice.className = state.wow.change >= 0 ? 'up' : 'down';
+            }
+            if (elements.tickerXmr) elements.tickerXmr.innerText = formatUSD(state.xmr.price);
+            if (elements.tickerBtc) elements.tickerBtc.innerText = formatUSD(state.btc.price);
+            if (elements.portfolioChange) elements.portfolioChange.innerText = (state.xmr.change > 0 ? '+' : '') + state.xmr.change.toFixed(1) + '%';
+            
+            // portfolio distribution
+            if (elements.xmrShare) elements.xmrShare.innerText = xmrShareVal + '%';
+            if (elements.btcShare) elements.btcShare.innerText = btcShareVal + '%';
+            if (elements.wowShare) elements.wowShare.innerText = wowShareVal + '%';
+            if (elements.otherShare) elements.otherShare.innerText = otherShareVal + '%';
+
+            // update pie chart
+            if (window.portfolioChart) {
+                window.portfolioChart.updateSeries([parseInt(xmrShareVal), parseInt(btcShareVal), parseInt(wowShareVal), parseInt(otherShareVal)]);
+            }
+        }
+
+        // ========== CHARTS INIT ==========
+        window.addEventListener('load', function() {
+            if (typeof ApexCharts !== 'undefined') {
+                // Price chart
+                const priceOpt = {
+                    series: [{ name: 'XMR price', data: [167.2, 168.5, 167.8, 169.4, 170.0, 168.9, 168.42] }],
+                    chart: { type: 'area', height: 300, background: 'transparent', toolbar: { show: false }, animations: { enabled: true, easing: 'linear', speed: 500 } },
+                    stroke: { curve: 'smooth', width: 3, colors: [ '#f15a24' ] },
+                    fill: { type: 'gradient', gradient: { shadeIntensity: 0.3, opacityFrom: 0.5, opacityTo: 0.1 } },
+                    xaxis: { labels: { style: { colors: '#64748b' } }, axisBorder: { show: false } },
+                    yaxis: { labels: { style: { colors: '#64748b' }, formatter: v => '$' + v.toFixed(2) } },
+                    grid: { borderColor: '#e2e8f0' },
+                    tooltip: { theme: 'light' }
+                };
+                window.priceChart = new ApexCharts(document.querySelector('#priceChart'), priceOpt);
+                window.priceChart.render();
+
+                // Portfolio donut
+                const pieOpt = {
+                    series: [68, 12, 8, 12],
+                    chart: { type: 'donut', height: 220, background: 'transparent' },
+                    labels: ['XMR', 'BTC', 'WOW', 'other'],
+                    colors: ['#f15a24', '#2563eb', '#a855f7', '#94a3b8'],
+                    legend: { show: false },
+                    dataLabels: { enabled: false },
+                    plotOptions: { pie: { donut: { size: '70%', labels: { show: true, total: { show: true, label: 'XMR', formatter: () => state.xmr.balance.toFixed(1) + ' XMR' } } } } }
+                };
+                window.portfolioChart = new ApexCharts(document.querySelector('#portfolioChart'), pieOpt);
+                window.portfolioChart.render();
+            }
+            refreshUI();
+
+            // ========== LIVE SIMULATION ==========
+            setInterval(() => {
+                // random walk
+                const xmrChange = (Math.random() * 4 - 2) / 100;
+                state.xmr.price = state.xmr.price * (1 + xmrChange);
+                state.xmr.change = xmrChange * 100;
+
+                const btcChange = (Math.random() * 3 - 1.5) / 100;
+                state.btc.price = state.btc.price * (1 + btcChange);
+                state.btc.change = btcChange * 100;
+
+                const wowChange = (Math.random() * 8 - 4) / 100;
+                state.wow.price = state.wow.price * (1 + wowChange);
+                state.wow.change = wowChange * 100;
+
+                refreshUI();
+
+                // update price chart
+                if (window.priceChart) {
+                    let series = window.priceChart.opts.series[0].data;
+                    series.push(state.xmr.price);
+                    if (series.length > 12) series.shift();
+                    window.priceChart.updateSeries([{ data: series }]);
+                }
+
+                // add pulse effect
+                document.querySelectorAll('.crypto-card').forEach(c => c.classList.add('price-update'));
+                setTimeout(() => document.querySelectorAll('.crypto-card').forEach(c => c.classList.remove('price-update')), 400);
+
+                // simulate new transaction
+                const txBody = document.getElementById('txBody');
+                if (txBody && Math.random() > 0.7) {
+                    const newRow = document.createElement('tr');
+                    const types = ['receive', 'send'];
+                    const type = types[Math.floor(Math.random() * 2)];
+                    const amount = (Math.random() * 5 + 0.1).toFixed(2);
+                    newRow.innerHTML = `<td>xm${Math.random().toString(36).substring(2,6)}...${Math.random().toString(36).substring(2,5)}</td><td class="${type === 'receive' ? 'up' : 'down'}">${type}</td><td>${amount} XMR</td><td><span class="badge" style="background:var(--success);">confirmed</span></td>`;
+                    txBody.prepend(newRow);
+                    if (txBody.children.length > 4) txBody.removeChild(txBody.lastElementChild);
+                }
+
+                // simulate new timeline activity
+                const timeline = document.getElementById('activityTimeline');
+                if (timeline && Math.random() > 0.8) {
+                    const activities = ['new ringCT transaction', 'bulletproof verified', 'block mined', 'stealth address generated'];
+                    const newItem = document.createElement('li');
+                    newItem.className = 'timeline-item';
+                    newItem.innerHTML = `<span class="timeline-point" style="background:var(--success);"></span><div><strong>${activities[Math.floor(Math.random() * activities.length)]}</strong><br><small class="text-muted">just now</small></div>`;
+                    timeline.prepend(newItem);
+                    if (timeline.children.length > 4) timeline.removeChild(timeline.lastElementChild);
+                }
+            }, 3800);
+        });
+
+        // ========== MOBILE SIDEBAR TOGGLE ==========
+        const sidebar = document.getElementById('layout-menu');
+        const overlay = document.getElementById('layoutOverlay');
+        function toggleSidebar() { sidebar.classList.toggle('show'); overlay.classList.toggle('show'); }
+        document.getElementById('sidebarToggle')?.addEventListener('click', (e) => { e.preventDefault(); if(window.innerWidth <= 992) toggleSidebar(); });
+        document.getElementById('mobileMenuToggle')?.addEventListener('click', (e) => { e.preventDefault(); toggleSidebar(); });
+        overlay?.addEventListener('click', toggleSidebar);
+
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 992 && sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+            }
+        });
+
+        // ========== DJANGO SPECIFIC ==========
+        // Update user avatar with actual first letter
+        const avatarElement = document.querySelector('.nav-link .avatar');
+        if (avatarElement && userData.firstName) {
+            avatarElement.innerText = userData.firstName.charAt(0).toUpperCase();
+        }
+
+        console.log('🚀 Monero dashboard (light) with Django backend — fully enhanced');
+    })();
+</script>
+</body>
+</html>

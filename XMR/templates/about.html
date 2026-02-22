@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monero · the standard for private digital cash</title>
+  <!-- Google Fonts: premium, clean, highly readable -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5.3 with icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Chart.js 4 for crisp data visuals -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --xmr-bg: #f8fafd;
+      --xmr-card: #ffffff;
+      --xmr-orange: #f60;
+      --xmr-deep: #1a1e2b;
+      --xmr-soft: #4b5568;
+      --xmr-border: #eef2f6;
+      --xmr-glow: rgba(255, 102, 0, 0.05);
+    }
+    body {
+      background-color: var(--xmr-bg);
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      color: #1a1e2b;
+      line-height: 1.5;
+      font-weight: 400;
+    }
+    h1, h2, h3, h4, .h3 {
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+    }
+    .card {
+      border: none;
+      border-radius: 32px;
+      background: var(--xmr-card);
+      box-shadow: 0 20px 40px -16px rgba(0,20,40,0.06), 0 0 0 1px rgba(0,0,0,0.02);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      height: 100%;
+    }
+    .card:hover {
+      box-shadow: 0 28px 48px -18px rgba(255,102,0,0.12), 0 0 0 1px rgba(255,102,0,0.2);
+      transform: translateY(-2px);
+    }
+    .card-glass {
+      background: rgba(255,255,255,0.75);
+      backdrop-filter: blur(4px);
+    }
+    .card-header {
+      background: transparent;
+      border-bottom: 1px solid var(--xmr-border);
+      padding: 1.4rem 1.8rem 0.8rem;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+    .stat-pill {
+      background: #ffffff;
+      border-radius: 60px;
+      padding: 0.5rem 1.2rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      border: 1px solid #f0f3f9;
+      font-weight: 500;
+    }
+    .stat-pill i {
+      color: var(--xmr-orange);
+      margin-right: 6px;
+    }
+    .icon-orange-bg {
+      width: 52px;
+      height: 52px;
+      background: rgba(255,102,0,0.05);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--xmr-orange);
+      font-size: 2rem;
+    }
+    .gradient-orange {
+      background: linear-gradient(135deg, #f60 0%, #ff944d 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .badge-outline {
+      border: 1px solid #e9ecf3;
+      background: white;
+      color: #2d3748;
+      border-radius: 100px;
+      padding: 0.3rem 1rem;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .badge-outline i {
+      color: var(--xmr-orange);
+    }
+    .badge-outline:hover {
+      background: #f0f3f9;
+      transition: 0.2s;
+    }
+    .btn-xmr {
+      background: #f60;
+      color: white;
+      border: none;
+      border-radius: 100px;
+      padding: 0.3rem 1rem;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-xmr:hover {
+      background: #e55c00;
+      color: white;
+    }
+    .table {
+      color: #1e293b;
+    }
+    .table > :not(caption) > * > * {
+      border-bottom-color: #edf2f7;
+      padding: 1rem 0.75rem;
+    }
+    .table > thead > tr > th {
+      font-weight: 600;
+      color: #5b687c;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+    }
+    canvas {
+      max-height: 170px;
+      width: 100% !important;
+    }
+    hr {
+      opacity: 0.25;
+    }
+    .footer-note {
+      color: #68738a;
+      font-size: 0.8rem;
+      border-top: 1px solid #eef2f6;
+      padding-top: 1.8rem;
+      margin-top: 2.8rem;
+    }
+    .lead-xl {
+      font-size: 1.3rem;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+    .auth-welcome {
+      background: white;
+      border-radius: 60px;
+      padding: 0.4rem 0.4rem 0.4rem 1.5rem;
+      border: 1px solid var(--xmr-border);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container py-5">
+  <!-- primary header with brand + navigation -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-5">
+    <div class="d-flex align-items-center gap-3">
+      <div class="icon-orange-bg" style="width:64px;height:64px;border-radius:28px;">
+        <i class="bi bi-shield-lock-fill" style="font-size:2.4rem;"></i>
+      </div>
+      <div>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          <h1 class="display-5 fw-bold" style="color:#0b1c34;">monero</h1>
+          <span class="stat-pill"><i class="bi bi-dot"></i> privacy · fungibility · cash</span>
+        </div>
+        <div class="d-flex gap-2 mt-2">
+          <span class="badge-outline"><i class="bi bi-check-circle-fill"></i> mainnet v0.18.3.4</span>
+          <span class="badge-outline"><i class="bi bi-lattice"></i> FCMP++ ready</span>
+          <span class="badge-outline"><i class="bi bi-graph-up"></i> market cap $8.31B</span>
+          
+          <!-- Fixed Django URL with namespace -->
+          <a href="{% url 'XMR:index' %}" class="btn-xmr text-decoration-none">
+            <i class="bi bi-bar-chart-line"></i> live dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mt-3 mt-xl-0 d-flex gap-2 align-items-center">
+      <!-- Authentication Section -->
+      {% if user.is_authenticated %}
+      <div class="auth-welcome d-flex align-items-center">
+        <span class="me-2"><i class="bi bi-person-circle" style="color:#f60;"></i> {{ user.username }}</span>
+        <a href="{% url 'XMR:dashboard' %}" class="btn-xmr text-decoration-none me-1">
+          <i class="bi bi-speedometer2"></i>
+        </a>
+        <a href="{% url 'XMR:logout' %}" class="btn btn-outline-danger btn-sm rounded-5">
+          <i class="bi bi-box-arrow-right"></i>
+        </a>
+      </div>
+      {% else %}
+      <div class="d-flex gap-2">
+        <a href="{% url 'XMR:signupin' %}" class="btn-xmr text-decoration-none">
+          <i class="bi bi-box-arrow-in-right"></i> Signup / Login
+        </a>
+      </div>
+      {% endif %}
+      
+      <!-- Price card -->
+      <div class="bg-white p-3 pe-4 ps-4 rounded-5 shadow-sm d-flex align-items-center gap-3">
+        <i class="bi bi-currency-dollar fs-3" style="color:#f60;"></i>
+        <span class="mono fw-semibold fs-5">XMR = $338.40</span>
+        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2"><i class="bi bi-arrow-up-short"></i> 3.2%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- hero / definition + core principles -->
+  <div class="row g-4 mb-5">
+    <div class="col-lg-7">
+      <div class="card p-4">
+        <span class="badge bg-light text-dark w-auto mb-3" style="border-radius:40px;"><i class="bi bi-shield me-1" style="color:#f60;"></i> digital cash, fully private by default</span>
+        <h2 class="display-6 fw-semibold mb-3">The only sound money that is <span class="gradient-orange">impossible to trace</span>.</h2>
+        <p class="lead-xl text-secondary-emphasis">Monero is a decentralized blockchain that hides every detail — sender, receiver, amount — using mandatory cryptography. No optional privacy. No transparency leaks. Just electronic cash that works like physical cash: completely fungible.</p>
+        <div class="row mt-4 g-3">
+          <div class="col-md-4 col-6"><i class="bi bi-check-circle-fill me-2" style="color:#f60;"></i> ring signatures</div>
+          <div class="col-md-4 col-6"><i class="bi bi-check-circle-fill me-2" style="color:#f60;"></i> stealth addresses</div>
+          <div class="col-md-4 col-6"><i class="bi bi-check-circle-fill me-2" style="color:#f60;"></i> RingCT amounts</div>
+          <div class="col-md-4 col-6"><i class="bi bi-check-circle-fill me-2" style="color:#f60;"></i> Dandelion++</div>
+          <div class="col-md-4 col-6"><i class="bi bi-check-circle-fill me-2" style="color:#f60;"></i> RandomX (CPU)</div>
+          <div class="col-md-4 col-6"><i class="bi bi-check-circle-fill me-2" style="color:#f60;"></i> tail emission</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card p-3 h-100">
+        <div class="card-header bg-transparent border-0 pb-0 d-flex align-items-center gap-2">
+          <i class="bi bi-pie-chart fs-4" style="color:#f60;"></i> <span>privacy composition</span>
+        </div>
+        <div class="card-body">
+          <canvas id="privacyMainPie" style="max-height:160px;"></canvas>
+          <div class="d-flex justify-content-center gap-4 mt-3 small">
+            <span><span style="background:#f60; width:10px;height:10px;" class="rounded-pill d-inline-block me-1"></span> ring 34%</span>
+            <span><span style="background:#fe8c4a; width:10px;height:10px;" class="rounded-pill d-inline-block me-1"></span> stealth 33%</span>
+            <span><span style="background:#ffb38a; width:10px;height:10px;" class="rounded-pill d-inline-block me-1"></span> RingCT 33%</span>
+          </div>
+          <hr class="my-3">
+          <div class="d-flex justify-content-between">
+            <span class="fw-semibold">ring size ≥16</span>
+            <span class="mono bg-light px-3 py-1 rounded-5">98.9% of txs</span>
+          </div>
+          <div class="mt-2 small text-secondary">minimum ring size 16 · FCMP++ upcoming</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- four metric cards with premium style -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-3 col-6">
+      <div class="card p-3">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-arrow-repeat fs-2 me-3" style="color:#f60;"></i>
+          <div>
+            <div class="text-uppercase small fw-semibold text-secondary">daily transactions</div>
+            <div class="h3 mb-0 fw-bold">33.5k</div>
+            <span class="text-success small"><i class="bi bi-arrow-up"></i> +6.2%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card p-3">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-hdd-stack fs-2 me-3" style="color:#f60;"></i>
+          <div>
+            <div class="text-uppercase small fw-semibold text-secondary">hashrate</div>
+            <div class="h3 mb-0 fw-bold">2.94 GH/s</div>
+            <span class="text-secondary small">RandomX v2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card p-3">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-shield-slash fs-2 me-3" style="color:#f60;"></i>
+          <div>
+            <div class="text-uppercase small fw-semibold text-secondary">exchange delistings</div>
+            <div class="h3 mb-0 fw-bold">73</div>
+            <span class="text-secondary small">(2025)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card p-3">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-diagram-3 fs-2 me-3" style="color:#f60;"></i>
+          <div>
+            <div class="text-uppercase small fw-semibold text-secondary">XMR-only markets</div>
+            <div class="h3 mb-0 fw-bold">48%</div>
+            <span class="text-info small">new darknet 2025</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- technology row: FCMP++ / Cuprate / Fluorine Fermi (premium cards) -->
+  <div class="row g-4 mb-5">
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-cpu me-2" style="color:#f60;"></i> FCMP++ (activated)</div>
+        <div class="card-body">
+          <p class="fw-bold">Full-Chain Membership Proofs</p>
+          <p>Replaces ring signatures with proofs that anonymously link to the entire chain’s UTXO set. Anonymity set becomes <strong>~80 million outputs</strong> – chain analysis is computationally infeasible.</p>
+          <span class="badge bg-dark text-white">mathematically provable untraceability</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-lightning me-2" style="color:#f60;"></i> Cuprate & RandomX v2</div>
+        <div class="card-body">
+          <ul class="list-unstyled">
+            <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color:#f60;"></i> Rust node, 7x faster sync</li>
+            <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color:#f60;"></i> full node on laptop &lt;16h</li>
+            <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color:#f60;"></i> RandomX v2 – CPU‑first, ASIC resistance</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-shield me-2" style="color:#f60;"></i> Fluorine Fermi (active)</div>
+        <div class="card-body">
+          <p>Network‑layer upgrade mitigating <strong>spy nodes</strong>. Adaptive peer selection reduces exposure to traffic analysis; deployed after 14‑15% non‑standard peers observed.</p>
+          <span class="badge bg-light text-dark">node diversity hardened</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- data table + ring size bar chart side by side -->
+  <div class="row g-4 mb-5">
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-table me-2" style="color:#f60;"></i> network fundamentals</div>
+        <div class="card-body p-0">
+          <table class="table table-hover align-middle mb-0">
+            <thead><tr><th>metric</th><th>value</th><th>note</th></tr></thead>
+            <tbody>
+              <tr><td>market cap</td><td>$8.31B</td><td>18.45M XMR circulating</td></tr>
+              <tr><td>24h volume</td><td>$207M</td><td>atomic swaps + offshore</td></tr>
+              <tr><td>tail emission</td><td>0.6 XMR/block</td><td>&lt;1% inflation, permanent security</td></tr>
+              <tr><td>median tx fee</td><td>0.000018 XMR</td><td>≈ $0.006</td></tr>
+              <tr><td>nodes (public)</td><td>2,511</td><td>88% Tor / I2P</td></tr>
+              <tr><td>atomic swaps (BTC–XMR)</td><td>liquidity depth ↑35%</td><td>since delistings</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-bar-chart-fill me-2" style="color:#f60;"></i> ring size distribution</div>
+        <div class="card-body d-flex flex-column">
+          <canvas id="ringDistBar" style="max-height:165px;"></canvas>
+          <div class="mt-3 d-flex justify-content-between align-items-center">
+            <span class="small fw-semibold">minimum 16, mode 16</span>
+            <span class="badge bg-dark text-white px-3 py-2">FCMP++ → ∞</span>
+          </div>
+          <div class="progress mt-3" style="height:8px;">
+            <div class="progress-bar bg-warning" style="width:81%"></div>
+            <div class="progress-bar bg-secondary" style="width:19%"></div>
+          </div>
+          <div class="small text-secondary mt-2">81% use exactly 16, rest use 17–20+</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- fungibility & adoption / quotes -->
+  <div class="row g-4 mb-5">
+    <div class="col-lg-6">
+      <div class="card p-4">
+        <i class="bi bi-bank2 fs-1" style="color:#f60; opacity:0.5;"></i>
+        <h3 class="mt-2">Fungibility is not a feature — it's the default.</h3>
+        <p class="text-secondary">Because every XMR coin is identical, no coin can be blacklisted or tainted. Monero is the only cryptocurrency where two coins are always interchangeable without history.</p>
+        <div class="d-flex gap-2 mt-2">
+          <span class="badge-outline"><i class="bi bi-check-lg"></i> accepted by 270+ merchants</span>
+          <span class="badge-outline"><i class="bi bi-check-lg"></i> 48% new darknet XMR‑only</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card p-4">
+        <i class="bi bi-arrow-left-right fs-1" style="color:#f60; opacity:0.5;"></i>
+        <h3 class="mt-2">Atomic swaps & liquidity</h3>
+        <p class="text-secondary">Trustless BTC/XMR swaps from your own wallet — no KYC, no middlemen. Liquidity has grown 35% in six months, with several GUI wallets integrating built‑in swap interfaces.</p>
+        <span class="badge bg-light w-auto mt-2"><i class="bi bi bi-link"></i> swap.anonymix example</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- outlook + institutional notes (cards with gradients) -->
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card p-4 border-0 bg-dark text-white" style="background:#1b1e2b;">
+        <div class="d-flex gap-3">
+          <i class="bi bi-eye-slash fs-1" style="color:#f60;"></i>
+          <div><span class="fw-bold fs-5">regulatory headwinds</span> — delistings continue, but peer‑to‑peer and atomic swaps grow. No backdoors, no compliance compromises.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card p-4 border-0" style="background:#faf9fe;">
+        <div class="d-flex gap-3">
+          <i class="bi bi-graph-up fs-1" style="color:#f60;"></i>
+          <div><span class="fw-bold fs-5">long‑term view</span> — FCMP++ activation and growing privacy demand position Monero as the default private reserve. </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- footer / sources note -->
+  <div class="footer-note d-flex justify-content-between flex-wrap">
+    <span><i class="bi bi-incognito me-2"></i> data compiled from on‑chain sources, TRM Labs, and network nodes. </span>
+    <span class="mono">privacy is normal · #monero</span>
+  </div>
+</div>
+
+<!-- scripts: bootstrap + charts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  (function initAboutCharts() {
+    // privacy composition (doughnut)
+    const pieCtx = document.getElementById('privacyMainPie').getContext('2d');
+    new Chart(pieCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['ring signatures', 'stealth addresses', 'RingCT'],
+        datasets: [{
+          data: [34, 33, 33],
+          backgroundColor: ['#f60', '#fe8c4a', '#ffb38a'],
+          borderWidth: 0,
+          borderRadius: 8,
+        }]
+      },
+      options: {
+        cutout: '68%',
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // ring distribution bar
+    const ringCtx = document.getElementById('ringDistBar').getContext('2d');
+    new Chart(ringCtx, {
+      type: 'bar',
+      data: {
+        labels: ['16', '17', '18', '19', '20+'],
+        datasets: [{
+          data: [81, 11, 5, 2, 1],
+          backgroundColor: ['#f60', '#fa873f', '#fca66f', '#fec29c', '#ffdec9'],
+          borderRadius: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, grid: { display: false }, display: false }, x: { grid: { display: false } } }
+      }
+    });
+  })();
+</script>
+</body>
+</html>

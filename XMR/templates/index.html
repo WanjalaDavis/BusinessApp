@@ -1,0 +1,481 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monero · live dashboard (Django ready)</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5.3 + icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Chart.js 4 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --xmr-bg: #f4f7fd;
+      --xmr-card: #ffffff;
+      --xmr-orange: #f60;
+      --xmr-soft: #4a4a6a;
+    }
+    body {
+      background-color: var(--xmr-bg);
+      font-family: 'Inter', sans-serif;
+      color: #1a1a2c;
+      padding-bottom: 2rem;
+    }
+    h1, h2, h3 { font-weight: 600; letter-spacing: -0.015em; }
+    .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; }
+    .card {
+      border: none; border-radius: 28px; background: var(--xmr-card);
+      box-shadow: 0 20px 35px -10px rgba(0,10,30,0.06), 0 0 0 1px rgba(0,0,0,0.02);
+      transition: all 0.15s;
+    }
+    .card-header {
+      background: transparent; border-bottom: 1px solid #e9ecf3;
+      padding: 1.25rem 1.5rem 0.75rem; font-weight: 600;
+    }
+    .stat-icon {
+      width: 48px; height: 48px; background: rgba(246,102,0,0.06); border-radius: 18px;
+      display: flex; align-items: center; justify-content: center; color: var(--xmr-orange); font-size: 1.8rem;
+    }
+    .xmr-badge {
+      background: #f0f2fa; color: #2d2d44; padding: 0.4rem 1rem; border-radius: 40px;
+      font-size: 0.8rem; font-weight: 500; border: 1px solid #fff;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .xmr-badge i { color: var(--xmr-orange); }
+    .xmr-badge:hover {
+      background: #e4e7f2;
+      transition: 0.2s;
+    }
+    .btn-xmr {
+      background: #f60; 
+      color: white; 
+      border: none;
+      padding: 0.4rem 1rem;
+      border-radius: 40px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-xmr:hover {
+      background: #e55c00;
+      color: white;
+    }
+    .progress-bar-xmr { background: linear-gradient(90deg, #f86e1d, #ff934e); border-radius: 40px; }
+    .table { color: #20202e; font-size: 0.95rem; }
+    .table > :not(caption) > * > * { border-bottom-color: #edeff8; padding: 0.9rem 0.5rem; }
+    .table > thead > tr > th { font-weight: 600; color: #525272; font-size: 0.7rem; letter-spacing: 0.5px; }
+    canvas { max-height: 180px; width: 100% !important; }
+    .blink-glow { transition: background 0.2s; }
+    .updated { background: rgba(255,102,0,0.04); }
+    .nav-links a { transition: 0.2s; }
+    .nav-links a:hover { color: #f60 !important; background: rgba(246,102,0,0.05); }
+  </style>
+</head>
+<body>
+
+<div class="container py-4 py-xl-5">
+  <!-- header with extra navigation for about / signup/login (Django style) -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center gap-3">
+      <div class="stat-icon" style="width:60px;height:60px;border-radius:24px;background:rgba(246,102,0,0.1);">
+        <i class="bi bi-shield-lock-fill" style="font-size:2.2rem;color:#f60;"></i>
+      </div>
+      <div>
+        <h1 class="display-6 fw-bold" style="color:#1b1b2c;">monero <span style="font-weight:400;color:#f60;">· entropy pool</span></h1>
+        <div class="d-flex gap-2 mt-1 flex-wrap">
+          <span class="xmr-badge"><i class="bi bi-circle-fill" style="font-size:0.5rem; color:#f60;"></i> mainnet · live random</span>
+          <span class="xmr-badge"><i class="bi bi-arrow-repeat" style="color:#f60;"></i> updates / 5s</span>
+          
+          <!-- Fixed Django URL tags with namespace -->
+          <a href="{% url 'XMR:about' %}" class="xmr-badge text-decoration-none">
+            <i class="bi bi-info-circle" style="color:#f60;"></i> About us
+          </a>
+          <a href="{% url 'XMR:signupin' %}" class="btn-xmr text-decoration-none">
+            <i class="bi bi-box-arrow-in-right"></i> Signup / Login
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="mt-3 mt-sm-0" id="xmrPriceBadge">
+      <span class="mono bg-dark text-white px-4 py-2 rounded-5" style="background:#1e1e2f !important;">
+        <i class="bi bi-upc-scan me-2"></i> XMR · $<span id="priceValue">219.80</span>
+      </span>
+    </div>
+  </div>
+ 
+  <!-- 4 stat cards (dynamic) -->
+  <div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card p-3 stat-card" id="stat1">
+        <div class="d-flex align-items-center">
+          <div class="stat-icon"><i class="bi bi-cpu"></i></div>
+          <div class="ms-3">
+            <span class="text-secondary-emphasis text-uppercase small fw-semibold">network hashrate</span>
+            <h3 class="mb-0 fw-bold" id="hashrateVal">2.81 GH/s</h3>
+            <span class="text-success small" id="hashrateChange"><i class="bi bi-arrow-up-short"></i> +4.2%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card p-3 stat-card" id="stat2">
+        <div class="d-flex align-items-center">
+          <div class="stat-icon"><i class="bi bi-currency-exchange"></i></div>
+          <div class="ms-3">
+            <span class="text-secondary-emphasis text-uppercase small fw-semibold">circulation</span>
+            <h3 class="mb-0 fw-bold" id="circVal">18.45 M XMR</h3>
+            <span class="text-warning small" id="circTail">tail 0.6 XMR/min</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card p-3 stat-card" id="stat3">
+        <div class="d-flex align-items-center">
+          <div class="stat-icon"><i class="bi bi-memory"></i></div>
+          <div class="ms-3">
+            <span class="text-secondary-emphasis text-uppercase small fw-semibold">median tx fee</span>
+            <h3 class="mb-0 fw-bold" id="feeVal">0.000018 XMR</h3>
+            <span class="text-secondary small" id="feeUsd">≈ $0.0039</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card p-3 stat-card" id="stat4">
+        <div class="d-flex align-items-center">
+          <div class="stat-icon"><i class="bi bi-node-plus-fill"></i></div>
+          <div class="ms-3">
+            <span class="text-secondary-emphasis text-uppercase small fw-semibold">public nodes</span>
+            <h3 class="mb-0 fw-bold" id="nodesVal">2,443</h3>
+            <span class="text-info small" id="nodesTor"><i class="bi bi-shield-check"></i> 88% tor</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- row: line chart + doughnut + bar -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-activity me-2" style="color:#f60;"></i> on-chain activity (30d · random walk)</div>
+        <div class="card-body">
+          <canvas id="txChart"></canvas>
+          <div class="d-flex justify-content-between mt-2 small text-secondary" id="txLabels">
+            <span class="mono">feb 01</span><span class="mono">mar 01</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-shield-lock me-2" style="color:#f60;"></i>privacy mix</div>
+        <div class="card-body d-flex flex-column justify-content-center">
+          <canvas id="privacyPieChart" style="max-height:140px;"></canvas>
+          <canvas id="outputPieChart" style="max-height:110px; margin-top:0.8rem;"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-bar-chart-steps me-2" style="color:#f60;"></i> ring size distribution</div>
+        <div class="card-body">
+          <canvas id="ringBarChart"></canvas>
+          <div class="bg-light p-2 rounded-4 mt-3 small d-flex justify-content-between" id="ringStats">
+            <span>avg ring: 16.4</span><span>≥16: 99.7%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table + mining pie -->
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between">
+          <span><i class="bi bi-table me-2"></i> latest blocks (refreshing)</span>
+          <span class="mono text-secondary" id="blockHeight">height 3,241,119</span>
+        </div>
+        <div class="card-body p-0 p-3">
+          <table class="table table-hover align-middle" id="blockTable">
+            <thead>
+              <tr>
+                <th>height</th>
+                <th>timestamp</th>
+                <th>txs</th>
+                <th>outputs</th>
+                <th>ring size</th>
+                <th>size (kB)</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- filled by js -->
+            </tbody>
+          </table>
+          <div class="text-end mono small text-secondary mt-2">✨ all txs use stealth & ringCT</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-pie-chart-fill me-2" style="color:#f60;"></i> mining distribution</div>
+        <div class="card-body">
+          <canvas id="miningPieChart"></canvas>
+          <div class="mt-3 d-flex justify-content-between bg-light p-2 rounded-3 small" id="miningLegend">
+            <span>p2pool: 44%</span><span>minexmr: 28%</span><span>other: 28%</span>
+          </div>
+          <div class="progress mt-2" style="height:8px;" id="miningProgress">
+            <div class="progress-bar progress-bar-xmr" style="width:44%"></div>
+            <div class="progress-bar bg-secondary" style="width:28%"></div>
+            <div class="progress-bar bg-dark" style="width:28%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Quick action buttons for logged in users (optional) -->
+  {% if user.is_authenticated %}
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <span>
+            <i class="bi bi-person-circle me-2" style="color:#f60;"></i>
+            Welcome back, <strong>{{ user.username }}</strong>
+          </span>
+          <div class="d-flex gap-2">
+            <a href="{% url 'XMR:dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-5">
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a href="{% url 'XMR:logout' %}" class="btn btn-outline-danger btn-sm rounded-5">
+              <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="footer-note d-flex justify-content-between mt-4 text-secondary small">
+    <span><i class="bi bi-incognito"></i> fully random · unpredictable every 5s</span>
+    <span class="mono">privacy = fungibility</span>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  (function() {
+    // ---------- all chart instances and data references ----------
+    let txChart, privacyPie, outputPie, ringBar, miningPie;
+
+    // initial data arrays (will be mutated randomly)
+    let txData = [24300,25100,24800,26700,27300,25900,26200,27000,28100,27700,26900,27200,28000,28600,29100,29500,28900,29300,30100,30700,29800,30200,31100,31500,32000,31800,32200,32700,33100,33500];
+    let privacyData = [34,33,33];
+    let outputData = [62,38];
+    let ringData = [78,12,6,3,1];
+    let miningData = [44,28,28];
+
+    // table rows handle
+    const tableBody = document.getElementById('tableBody');
+
+    function randomWalk(value, minFactor = 0.94, maxFactor = 1.06, floor=null, ceil=null) {
+      let factor = 0.96 + Math.random() * 0.08; // 0.96 .. 1.04
+      let newVal = value * factor;
+      if (floor !== undefined) newVal = Math.max(floor, newVal);
+      if (ceil !== undefined) newVal = Math.min(ceil, newVal);
+      return Math.round(newVal * 100) / 100;
+    }
+
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function randomPercentChange() {
+      let dir = Math.random() > 0.5 ? 1 : -1;
+      let change = (Math.random() * 6).toFixed(1);
+      return {dir, change};
+    }
+
+    // update all stats cards, charts, table
+    function refreshDashboard() {
+      // highlight cards (simple touch)
+      document.querySelectorAll('.stat-card').forEach(c => c.classList.add('updated'));
+      setTimeout(() => document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('updated')), 200);
+
+      // ---- stats cards (unpredictable) ----
+      // hashrate (GH/s) around 2.5–3.2
+      let hashrate = (2.5 + Math.random() * 0.7).toFixed(2);
+      document.getElementById('hashrateVal').innerText = hashrate + ' GH/s';
+      let {dir, change} = randomPercentChange();
+      document.getElementById('hashrateChange').innerHTML = (dir>0 ? '<i class="bi bi-arrow-up-short"></i> +' : '<i class="bi bi-arrow-down-short"></i> -') + change + '%';
+
+      // circulation (M XMR) 18.3–18.6
+      let circ = (18.3 + Math.random() * 0.3).toFixed(2);
+      document.getElementById('circVal').innerText = circ + ' M XMR';
+      document.getElementById('circTail').innerText = 'tail ' + (0.5 + Math.random()*0.2).toFixed(2) + ' XMR/min';
+
+      // fee XMR (0.000012–0.000025)
+      let fee = (0.000012 + Math.random()*0.000013).toFixed(8);
+      document.getElementById('feeVal').innerText = fee + ' XMR';
+      let feeUsd = (parseFloat(fee) * 220 * (0.9+Math.random()*0.2)).toFixed(6);
+      document.getElementById('feeUsd').innerText = '≈ $' + feeUsd;
+
+      // nodes 2000–2800
+      let nodes = randomInt(2100, 2900);
+      document.getElementById('nodesVal').innerText = nodes.toLocaleString();
+      let torPercent = randomInt(75, 94);
+      document.getElementById('nodesTor').innerHTML = `<i class="bi bi-shield-check"></i> ${torPercent}% tor`;
+
+      // XMR price 190..280
+      let price = (190 + Math.random() * 90).toFixed(2);
+      document.getElementById('priceValue').innerText = price;
+
+      // ---- line chart (random walk tx) ----
+      txData = txData.map(v => Math.max(18000, Math.min(42000, v * (0.94 + Math.random()*0.12)) ));
+      txData = txData.map(v => Math.round(v));
+      txChart.data.datasets[0].data = txData;
+      txChart.update();
+
+      // ---- privacy pie (ring/stealth/ringct) : sum to 100 ----
+      let r1 = randomInt(25, 45);
+      let r2 = randomInt(25, 45);
+      let r3 = 100 - r1 - r2;
+      privacyData = [r1, r2, r3];
+      privacyPie.data.datasets[0].data = privacyData;
+      privacyPie.update();
+
+      // output pie (change/recipient)
+      let out1 = randomInt(45, 75);
+      outputData = [out1, 100-out1];
+      outputPie.data.datasets[0].data = outputData;
+      outputPie.update();
+
+      // ring bar chart (5 categories, unpredictable)
+      let rBar1 = randomInt(60, 88);
+      let rBar2 = randomInt(5, 22);
+      let rBar3 = randomInt(2, 12);
+      let rBar4 = randomInt(0, 8);
+      let rBar5 = 100 - (rBar1+rBar2+rBar3+rBar4);
+      ringData = [rBar1, rBar2, rBar3, rBar4, Math.max(0, rBar5)];
+      ringBar.data.datasets[0].data = ringData;
+      ringBar.update();
+
+      // update ring stats
+      let avgRing = (16 + Math.random() * 0.9).toFixed(1);
+      let perc = (99.0 + Math.random() * 0.9).toFixed(1);
+      document.getElementById('ringStats').innerHTML = `<span>avg ring: ${avgRing}</span><span>≥16: ${perc}%</span>`;
+
+      // mining pie
+      let m1 = randomInt(30, 55);
+      let m2 = randomInt(20, 40);
+      let m3 = 100 - m1 - m2;
+      miningData = [m1, m2, m3];
+      miningPie.data.datasets[0].data = miningData;
+      miningPie.update();
+
+      // update mining legend + progress
+      document.getElementById('miningLegend').innerHTML = `<span>p2pool: ${m1}%</span><span>minexmr: ${m2}%</span><span>other: ${m3}%</span>`;
+      let progBars = document.querySelectorAll('#miningProgress .progress-bar');
+      progBars[0].style.width = m1 + '%';
+      progBars[1].style.width = m2 + '%';
+      progBars[2].style.width = m3 + '%';
+
+      // ---- block table random ----
+      let baseHeight = 3241119 - randomInt(5, 30);
+      document.getElementById('blockHeight').innerText = 'height ' + baseHeight.toLocaleString();
+      let rows = '';
+      for (let i=0; i<6; i++) {
+        let h = baseHeight - i;
+        let ts = `${randomInt(10,23)}:${randomInt(10,59)}:${randomInt(10,59)}`;
+        let txs = randomInt(8, 42);
+        let outs = randomInt(40, 210);
+        let rSize = randomInt(16, 22);
+        let sizeKB = (6 + Math.random() * 24).toFixed(1);
+        rows += `<tr><td>${h}</td><td>${ts}</td><td>${txs}</td><td>${outs}</td><td>${rSize}</td><td>${sizeKB}</td></tr>`;
+      }
+      tableBody.innerHTML = rows;
+    }
+
+    // ---- initialize charts ----
+    function initCharts() {
+      const ctxTx = document.getElementById('txChart').getContext('2d');
+      txChart = new Chart(ctxTx, {
+        type: 'line',
+        data: {
+          labels: Array.from({length:30}, (_,i)=> i+1),
+          datasets: [{
+            label: 'tx/day', data: txData,
+            borderColor: '#f60', backgroundColor: 'rgba(246,102,0,0.03)',
+            borderWidth: 2.5, pointRadius: 1.5, tension: 0.2, fill: true
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } } }
+      });
+
+      const pieCtx = document.getElementById('privacyPieChart').getContext('2d');
+      privacyPie = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['ring sig', 'stealth', 'ringCT'],
+          datasets: [{ data: privacyData, backgroundColor: ['#f60', '#fe8c4a', '#ffb38a'], borderWidth: 0, borderRadius: 6 }]
+        },
+        options: { cutout: '65%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: {size:9} } } } }
+      });
+
+      const outCtx = document.getElementById('outputPieChart').getContext('2d');
+      outputPie = new Chart(outCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['recipient', 'change'],
+          datasets: [{ data: outputData, backgroundColor: ['#f60', '#2b2b44'], borderWidth: 0 }]
+        },
+        options: { cutout: '60%', plugins: { legend: { position: 'bottom', labels: { font:{size:8} } } } }
+      });
+
+      const ringCtx = document.getElementById('ringBarChart').getContext('2d');
+      ringBar = new Chart(ringCtx, {
+        type: 'bar',
+        data: {
+          labels: ['16', '17', '18', '19', '20+'],
+          datasets: [{
+            data: ringData,
+            backgroundColor: ['#f60', '#f98e4a', '#fcb37a', '#fdccaa', '#fee5d6'],
+            borderRadius: 8
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } } }
+      });
+
+      const mineCtx = document.getElementById('miningPieChart').getContext('2d');
+      miningPie = new Chart(mineCtx, {
+        type: 'pie',
+        data: {
+          labels: ['p2pool', 'minexmr', 'other'],
+          datasets: [{ data: miningData, backgroundColor: ['#f60', '#34344e', '#8a8aaa'], borderWidth: 0 }]
+        },
+        options: { plugins: { legend: { position: 'bottom', labels: { font:{size:10} } } } }
+      });
+    }
+
+    
+    initCharts();   
+    refreshDashboard();   
+    setInterval(refreshDashboard, 5000);
+  })();
+</script>
+
+</body>
+</html>

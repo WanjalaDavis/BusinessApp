@@ -1,0 +1,2995 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Monero Admin · Sovereign Dashboard</title>
+    
+    <!-- Bootstrap 5.3 + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+    
+    <!-- DataTables for better table management -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ===== RESET & BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        :root[data-bs-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #e9ecf2 100%);
+            --sidebar-bg: rgba(255, 255, 255, 0.85);
+            --sidebar-hover: rgba(0, 0, 0, 0.05);
+            --sidebar-active: rgba(241, 90, 36, 0.1);
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --border-color: rgba(0, 0, 0, 0.08);
+            --text-primary: #1a1f36;
+            --text-secondary: #64748b;
+            --shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --warning-bg: rgba(245, 158, 11, 0.1);
+            --danger-bg: rgba(239, 68, 68, 0.1);
+            --info-bg: rgba(59, 130, 246, 0.1);
+        }
+
+        :root[data-bs-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --sidebar-bg: rgba(15, 23, 42, 0.9);
+            --sidebar-hover: rgba(255, 255, 255, 0.05);
+            --sidebar-active: rgba(241, 90, 36, 0.15);
+            --card-bg: rgba(30, 41, 59, 0.9);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+            --success-bg: rgba(16, 185, 129, 0.2);
+            --warning-bg: rgba(245, 158, 11, 0.2);
+            --danger-bg: rgba(239, 68, 68, 0.2);
+            --info-bg: rgba(59, 130, 246, 0.2);
+        }
+
+        /* ===== TOP NAVBAR ===== */
+        .navbar {
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 2rem;
+            box-shadow: var(--shadow);
+            z-index: 1030;
+            position: sticky;
+            top: 0;
+        }
+
+        .brand-text {
+            background: linear-gradient(135deg, #f15a24, #ff8c5a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+        }
+
+        .admin-badge {
+            background: rgba(241, 90, 36, 0.15);
+            color: #f15a24;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .theme-toggle {
+            background: var(--sidebar-hover);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--sidebar-active);
+            transform: rotate(15deg);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #f15a24;
+            color: white;
+            font-size: 0.65rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 20px;
+            min-width: 18px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #f15a24, #ff8c5a);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .admin-wrapper {
+            display: flex;
+            min-height: calc(100vh - 72px);
+        }
+
+        .admin-sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-right: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: sticky;
+            top: 72px;
+            height: calc(100vh - 72px);
+            overflow-y: auto;
+            z-index: 1020;
+        }
+
+        .sidebar-nav {
+            padding: 1.5rem 0;
+        }
+
+        .nav-item-sidebar {
+            margin: 0.25rem 0.5rem;
+        }
+
+        .nav-link-sidebar {
+            display: flex;
+            align-items: center;
+            padding: 0.875rem 1.5rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link-sidebar i {
+            font-size: 1.25rem;
+            min-width: 2rem;
+        }
+
+        .nav-link-sidebar:hover {
+            background: var(--sidebar-hover);
+            transform: translateX(5px);
+        }
+
+        .nav-link-sidebar.active {
+            background: var(--sidebar-active);
+            color: #f15a24;
+        }
+
+        .nav-link-sidebar.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 60%;
+            background: #f15a24;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .nav-text {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .nav-badge {
+            background: #f15a24;
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 20px;
+            margin-left: 0.5rem;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-width: calc(100% - 280px);
+        }
+
+        /* ===== STATS CARDS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .stat-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+        }
+
+        .stat-icon.users { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+        .stat-icon.deposits { background: linear-gradient(135deg, #f59e0b, #f97316); }
+        .stat-icon.invested { background: linear-gradient(135deg, #10b981, #14b8a6); }
+        .stat-icon.withdrawals { background: linear-gradient(135deg, #ef4444, #f97316); }
+        .stat-icon i { color: white; }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: 'Space Grotesk', sans-serif;
+            line-height: 1.2;
+        }
+
+        .stat-value small {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .stat-trend {
+            font-size: 0.8rem;
+            color: #10b981;
+        }
+
+        /* ===== CHARTS ===== */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.25rem;
+            box-shadow: var(--shadow);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .chart-header h5 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .stats-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background: var(--sidebar-hover);
+            border-radius: 10px;
+        }
+
+        /* ===== TABLES ===== */
+        .tab-pane {
+            display: none;
+        }
+        
+        .tab-pane.active {
+            display: block;
+        }
+
+        .table-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.25rem;
+            margin-top: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table-header h4 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.5rem 2rem 0.5rem 1rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            min-width: 140px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .search-box input {
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
+            color: var(--text-primary);
+            min-width: 250px;
+        }
+
+        .btn-action {
+            padding: 0.4rem 1rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background: var(--sidebar-hover);
+            color: var(--text-primary);
+        }
+
+        .btn-action:hover {
+            background: #f15a24;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--sidebar-hover);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .btn-icon:hover {
+            background: #f15a24;
+            color: white;
+            transform: rotate(15deg);
+        }
+
+        .btn-icon.success:hover { background: #10b981; }
+        .btn-icon.danger:hover { background: #ef4444; }
+        .btn-icon.warning:hover { background: #f59e0b; }
+        .btn-icon.info:hover { background: #3b82f6; }
+
+        /* Table Styles */
+        .modern-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        .modern-table thead th {
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .modern-table tbody tr {
+            background: var(--sidebar-hover);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .modern-table tbody tr:hover {
+            transform: scale(1.005);
+            box-shadow: var(--shadow);
+            background: var(--card-bg);
+        }
+
+        .modern-table td {
+            padding: 1rem;
+            color: var(--text-primary);
+            border: none;
+        }
+
+        .modern-table td:first-child {
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+        }
+
+        .modern-table td:last-child {
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 0.35rem 1rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .status-badge.pending {
+            background: var(--warning-bg);
+            color: #f59e0b;
+        }
+
+        .status-badge.verified,
+        .status-badge.completed,
+        .status-badge.success {
+            background: var(--success-bg);
+            color: #10b981;
+        }
+
+        .status-badge.rejected,
+        .status-badge.danger {
+            background: var(--danger-bg);
+            color: #ef4444;
+        }
+
+        .status-badge.processing,
+        .status-badge.info {
+            background: var(--info-bg);
+            color: #3b82f6;
+        }
+
+        /* User Cell */
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar-sm {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #f15a24, #ff8c5a);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Amount Styling */
+        .amount {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            color: #f15a24;
+        }
+
+        .amount-positive {
+            color: #10b981;
+        }
+
+        .amount-negative {
+            color: #ef4444;
+        }
+
+        /* Action Buttons Group */
+        .action-buttons {
+            display: flex;
+            gap: 0.35rem;
+        }
+
+        /* KYC Grid */
+        .kyc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.25rem;
+            margin-top: 1rem;
+        }
+
+        .kyc-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .kyc-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+
+        .kyc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .kyc-documents {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .kyc-doc-preview {
+            width: 100%;
+            height: 80px;
+            border-radius: 10px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+        }
+
+        /* Pagination */
+        .pagination-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .pagination {
+            gap: 0.25rem;
+        }
+
+        .page-link {
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .page-link:hover {
+            background: #f15a24;
+            color: white;
+            border-color: #f15a24;
+        }
+
+        .page-item.active .page-link {
+            background: #f15a24;
+            border-color: #f15a24;
+        }
+
+        /* Modal Styles */
+        .modal-content {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 1.5rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border-color);
+            padding: 1.25rem 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #f15a24;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .admin-sidebar {
+                width: 80px;
+                overflow: visible;
+            }
+            
+            .admin-sidebar:hover {
+                width: 280px;
+                position: absolute;
+                z-index: 1050;
+                box-shadow: var(--shadow);
+            }
+            
+            .nav-text {
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+            
+            .admin-sidebar:hover .nav-text {
+                opacity: 1;
+            }
+            
+            .main-content {
+                max-width: calc(100% - 80px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .admin-wrapper {
+                flex-direction: column;
+            }
+            
+            .admin-sidebar {
+                width: 100%;
+                height: auto;
+                position: fixed;
+                bottom: 0;
+                top: auto;
+                z-index: 1050;
+            }
+            
+            .sidebar-nav {
+                display: flex;
+                padding: 0.5rem;
+                overflow-x: auto;
+            }
+            
+            .nav-item-sidebar {
+                flex-shrink: 0;
+            }
+            
+            .main-content {
+                max-width: 100%;
+                padding: 1rem;
+                margin-bottom: 70px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-group {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .filter-select {
+                width: 100%;
+            }
+            
+            .search-box input {
+                width: 100%;
+            }
+            
+            .table-responsive {
+                overflow-x: auto;
+            }
+            
+            .modern-table {
+                min-width: 800px;
+            }
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1060;
+        }
+
+        .toast {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            min-width: 300px;
+        }
+
+        /* Loading Spinner */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border-color);
+            border-top-color: #f15a24;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Tooltips */
+        [data-tooltip] {
+            position: relative;
+            cursor: help;
+        }
+
+        [data-tooltip]:before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.25rem 0.5rem;
+            background: var(--text-primary);
+            color: var(--bg-gradient);
+            font-size: 0.75rem;
+            border-radius: 4px;
+            white-space: nowrap;
+            display: none;
+            z-index: 1000;
+        }
+
+        [data-tooltip]:hover:before {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading Spinner -->
+<div class="spinner-overlay" id="loadingSpinner">
+    <div class="spinner"></div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ========== TOP NAVBAR ========== -->
+<nav class="navbar">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center">
+            <a href="{% url 'XMR:index' %}" class="text-decoration-none">
+                <span class="fw-bold fs-4 brand-text">monero</span>
+                <span class="admin-badge ms-2">admin</span>
+            </a>
+        </div>
+        
+        <div class="d-flex align-items-center gap-3">
+            <!-- Theme Toggle -->
+            <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                <i class="bi bi-sun-fill light-icon"></i>
+                <i class="bi bi-moon-fill dark-icon"></i>
+            </button>
+            
+            <!-- Notifications -->
+            <div class="dropdown">
+                <button class="btn btn-icon position-relative" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-bell fs-5"></i>
+                    <span class="notification-badge" id="notificationCount">{{ dashboard_stats.pending_deposits|add:dashboard_stats.pending_withdrawals|add:dashboard_stats.pending_kyc }}</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end" style="min-width: 280px;">
+                    <h6 class="dropdown-header">Pending Actions</h6>
+                    <a class="dropdown-item d-flex justify-content-between align-items-center" href="#" onclick="switchTab('deposits'); return false;">
+                        <span><i class="bi bi-wallet2 me-2 text-warning"></i>Deposits</span>
+                        <span class="badge bg-warning rounded-pill" id="pendingDepositsCount">{{ dashboard_stats.pending_deposits }}</span>
+                    </a>
+                    <a class="dropdown-item d-flex justify-content-between align-items-center" href="#" onclick="switchTab('withdrawals'); return false;">
+                        <span><i class="bi bi-cash me-2 text-info"></i>Withdrawals</span>
+                        <span class="badge bg-info rounded-pill" id="pendingWithdrawalsCount">{{ dashboard_stats.pending_withdrawals }}</span>
+                    </a>
+                    <a class="dropdown-item d-flex justify-content-between align-items-center" href="#" onclick="switchTab('kyc'); return false;">
+                        <span><i class="bi bi-shield-check me-2 text-primary"></i>KYC Requests</span>
+                        <span class="badge bg-primary rounded-pill" id="pendingKycCount">{{ dashboard_stats.pending_kyc }}</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <div class="text-center small text-muted">
+                        {{ dashboard_stats.new_users_today }} new users today
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Menu -->
+            <div class="dropdown">
+                <button class="btn p-0" data-bs-toggle="dropdown">
+                    <div class="user-avatar">
+                        {{ request.user.first_name|first|default:request.user.username|first|upper }}
+                    </div>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'XMR:index' %}"><i class="bi bi-house me-2"></i>Home</a></li>
+                    <li><a class="dropdown-item" href="{% url 'XMR:account' %}"><i class="bi bi-speedometer2 me-2"></i>User Dashboard</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'XMR:logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- ========== MAIN WRAPPER ========== -->
+<div class="admin-wrapper">
+    <!-- ========== SIDEBAR ========== -->
+    <aside class="admin-sidebar">
+        <nav class="sidebar-nav">
+            <div class="nav-item-sidebar">
+                <a class="nav-link-sidebar {% if active_tab == 'dashboard' %}active{% endif %}" href="#" onclick="switchTab('dashboard'); return false;">
+                    <i class="bi bi-speedometer2"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+            </div>
+            <div class="nav-item-sidebar">
+                <a class="nav-link-sidebar {% if active_tab == 'deposits' %}active{% endif %}" href="#" onclick="switchTab('deposits'); return false;">
+                    <i class="bi bi-wallet2"></i>
+                    <span class="nav-text">Deposits</span>
+                    {% if dashboard_stats.pending_deposits > 0 %}
+                    <span class="nav-badge">{{ dashboard_stats.pending_deposits }}</span>
+                    {% endif %}
+                </a>
+            </div>
+            <div class="nav-item-sidebar">
+                <a class="nav-link-sidebar {% if active_tab == 'withdrawals' %}active{% endif %}" href="#" onclick="switchTab('withdrawals'); return false;">
+                    <i class="bi bi-cash"></i>
+                    <span class="nav-text">Withdrawals</span>
+                    {% if dashboard_stats.pending_withdrawals > 0 %}
+                    <span class="nav-badge">{{ dashboard_stats.pending_withdrawals }}</span>
+                    {% endif %}
+                </a>
+            </div>
+            <div class="nav-item-sidebar">
+                <a class="nav-link-sidebar {% if active_tab == 'investments' %}active{% endif %}" href="#" onclick="switchTab('investments'); return false;">
+                    <i class="bi bi-graph-up"></i>
+                    <span class="nav-text">Investments</span>
+                </a>
+            </div>
+            <div class="nav-item-sidebar">
+                <a class="nav-link-sidebar {% if active_tab == 'users' %}active{% endif %}" href="#" onclick="switchTab('users'); return false;">
+                    <i class="bi bi-people"></i>
+                    <span class="nav-text">Users</span>
+                    <span class="nav-badge">{{ dashboard_stats.total_users }}</span>
+                </a>
+            </div>
+            <div class="nav-item-sidebar">
+                <a class="nav-link-sidebar {% if active_tab == 'tokens' %}active{% endif %}" href="#" onclick="switchTab('tokens'); return false;">
+                    <i class="bi bi-coin"></i>
+                    <span class="nav-text">Tokens</span>
+                </a>
+            </div>
+            <div class="nav-item-sidebar">
+                <a class="nav-link-sidebar {% if active_tab == 'kyc' %}active{% endif %}" href="#" onclick="switchTab('kyc'); return false;">
+                    <i class="bi bi-shield-check"></i>
+                    <span class="nav-text">KYC</span>
+                    {% if dashboard_stats.pending_kyc > 0 %}
+                    <span class="nav-badge">{{ dashboard_stats.pending_kyc }}</span>
+                    {% endif %}
+                </a>
+            </div>
+            <div class="nav-item-sidebar">
+                <a class="nav-link-sidebar {% if active_tab == 'transactions' %}active{% endif %}" href="#" onclick="switchTab('transactions'); return false;">
+                    <i class="bi bi-arrow-left-right"></i>
+                    <span class="nav-text">Transactions</span>
+                </a>
+            </div>
+            <div class="nav-item-sidebar">
+                <a class="nav-link-sidebar {% if active_tab == 'logs' %}active{% endif %}" href="#" onclick="switchTab('logs'); return false;">
+                    <i class="bi bi-journal-text"></i>
+                    <span class="nav-text">System Logs</span>
+                </a>
+            </div>
+            <div class="nav-item-sidebar">
+                <a class="nav-link-sidebar {% if active_tab == 'settings' %}active{% endif %}" href="#" onclick="switchTab('settings'); return false;">
+                    <i class="bi bi-gear"></i>
+                    <span class="nav-text">Settings</span>
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="main-content">
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-pane {% if active_tab == 'dashboard' %}active{% endif %}">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon users">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Total Users</span>
+                        <div class="stat-value">{{ dashboard_stats.total_users }}</div>
+                        <span class="stat-trend">
+                            <i class="bi bi-arrow-up"></i> {{ dashboard_stats.new_users_today }} today
+                        </span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon deposits">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Total Deposits</span>
+                        <div class="stat-value">{{ dashboard_stats.total_deposits|floatformat:0 }} <small>KSH</small></div>
+                        <span class="text-warning">{{ dashboard_stats.pending_deposits }} pending</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon invested">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Total Invested</span>
+                        <div class="stat-value">{{ dashboard_stats.total_invested|floatformat:0 }} <small>KSH</small></div>
+                        <span class="text-success">{{ dashboard_stats.active_investments }} active</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon withdrawals">
+                        <i class="bi bi-arrow-up-right-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Total Withdrawals</span>
+                        <div class="stat-value">{{ dashboard_stats.total_withdrawals|floatformat:0 }} <small>KSH</small></div>
+                        <span class="text-info">{{ dashboard_stats.pending_withdrawals }} pending</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h5><i class="bi bi-graph-up me-2"></i>Daily Deposits (7 days)</h5>
+                    </div>
+                    <div style="height: 250px;">
+                        <canvas id="depositsChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h5><i class="bi bi-pie-chart me-2"></i>Quick Stats</h5>
+                    </div>
+                    <div class="stats-list">
+                        <div class="stats-item">
+                            <span>Verified Users</span>
+                            <span class="fw-bold">{{ dashboard_stats.verified_users }}</span>
+                        </div>
+                        <div class="stats-item">
+                            <span>Total Profits Paid</span>
+                            <span class="fw-bold">{{ dashboard_stats.total_profits_paid|floatformat:0 }} KSH</span>
+                        </div>
+                        <div class="stats-item">
+                            <span>Pending KYC</span>
+                            <span class="fw-bold text-primary">{{ dashboard_stats.pending_kyc }}</span>
+                        </div>
+                        <div class="stats-item">
+                            <span>Active Investments</span>
+                            <span class="fw-bold text-success">{{ dashboard_stats.active_investments }}</span>
+                        </div>
+                        <div class="stats-item">
+                            <span>New Users (Week)</span>
+                            <span class="fw-bold">{{ dashboard_stats.new_users_week }}</span>
+                        </div>
+                        <div class="stats-item">
+                            <span>Completed Investments</span>
+                            <span class="fw-bold text-info">{{ dashboard_stats.completed_investments|default:"0" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deposits Tab - FIXED -->
+        <div id="deposits" class="tab-pane {% if active_tab == 'deposits' %}active{% endif %}">
+            <div class="table-header">
+                <h4>Deposit Management</h4>
+                <div class="filter-group">
+                    <select class="filter-select" id="depositStatusFilter">
+                        <option value="PENDING">Pending</option>
+                        <option value="VERIFIED">Verified</option>
+                        <option value="REJECTED">Rejected</option>
+                        <option value="PROCESSING">Processing</option>
+                        <option value="">All</option>
+                    </select>
+                    <button class="btn-action" onclick="filterDeposits()">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="modern-table" id="depositsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Amount</th>
+                                <th>Phone</th>
+                                <th>M-Pesa Code</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="depositsTableBody">
+                            {% if deposits_data %}
+                                {% for deposit in deposits_data %}
+                                <tr id="deposit-{{ deposit.id }}">
+                                    <td>#{{ deposit.id }}</td>
+                                    <td>
+                                        <div class="user-cell">
+                                            <div class="user-avatar-sm">{{ deposit.user|first|upper }}</div>
+                                            <span>{{ deposit.user }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="amount">{{ deposit.amount|floatformat:2 }} KSH</td>
+                                    <td>{{ deposit.phone }}</td>
+                                    <td><code>{{ deposit.mpesa_code|default:"—" }}</code></td>
+                                    <td>{{ deposit.created_at }}</td>
+                                    <td>
+                                        <span class="status-badge 
+                                            {% if deposit.status == 'PENDING' %}pending
+                                            {% elif deposit.status == 'VERIFIED' %}verified
+                                            {% elif deposit.status == 'REJECTED' %}rejected
+                                            {% elif deposit.status == 'PROCESSING' %}processing
+                                            {% endif %}">
+                                            {{ deposit.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            {% if deposit.status == 'PENDING' %}
+                                            <button class="btn-icon success" onclick="verifyDeposit({{ deposit.id }})" title="Verify">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                            <button class="btn-icon danger" onclick="rejectDeposit({{ deposit.id }})" title="Reject">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if deposit.has_screenshot %}
+                                            <button class="btn-icon info" onclick="viewScreenshot('{{ deposit.mpesa_screenshot_url|default:"" }}')" title="View Screenshot">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <i class="bi bi-inbox fs-1 d-block mb-3 text-muted"></i>
+                                        <h5>No deposits found</h5>
+                                        <p class="text-muted">Deposits will appear here once users make them.</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Withdrawals Tab -->
+        <div id="withdrawals" class="tab-pane {% if active_tab == 'withdrawals' %}active{% endif %}">
+            <div class="table-header">
+                <h4>Withdrawal Management</h4>
+                <div class="filter-group">
+                    <select class="filter-select" id="withdrawalStatusFilter">
+                        <option value="PENDING">Pending</option>
+                        <option value="PROCESSING">Processing</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="REJECTED">Rejected</option>
+                        <option value="">All</option>
+                    </select>
+                    <button class="btn-action" onclick="filterWithdrawals()">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="modern-table" id="withdrawalsTable">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>User</th>
+                                <th>Amount</th>
+                                <th>Net</th>
+                                <th>Tax</th>
+                                <th>Method</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="withdrawalsTableBody">
+                            {% if withdrawals_data %}
+                                {% for withdrawal in withdrawals_data %}
+                                <tr id="withdrawal-{{ withdrawal.id }}">
+                                    <td><code>{{ withdrawal.request_id|truncatechars:8 }}</code></td>
+                                    <td>
+                                        <div class="user-cell">
+                                            <div class="user-avatar-sm">{{ withdrawal.user|first|upper }}</div>
+                                            <span>{{ withdrawal.user }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="amount">{{ withdrawal.amount|floatformat:2 }} KSH</td>
+                                    <td class="amount-positive">{{ withdrawal.net_amount|floatformat:2 }} KSH</td>
+                                    <td class="amount-negative">{{ withdrawal.tax|floatformat:2 }} KSH</td>
+                                    <td>{{ withdrawal.method }}</td>
+                                    <td>{{ withdrawal.created_at }}</td>
+                                    <td>
+                                        <span class="status-badge 
+                                            {% if withdrawal.status == 'PENDING' %}pending
+                                            {% elif withdrawal.status == 'PROCESSING' %}processing
+                                            {% elif withdrawal.status == 'COMPLETED' %}verified
+                                            {% elif withdrawal.status == 'REJECTED' %}rejected
+                                            {% endif %}">
+                                            {{ withdrawal.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            {% if withdrawal.status == 'PENDING' %}
+                                            <button class="btn-icon info" onclick="processWithdrawal({{ withdrawal.id }})" title="Process">
+                                                <i class="bi bi-gear"></i>
+                                            </button>
+                                            <button class="btn-icon success" onclick="completeWithdrawal({{ withdrawal.id }})" title="Complete">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                            <button class="btn-icon danger" onclick="rejectWithdrawal({{ withdrawal.id }})" title="Reject">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                            {% elif withdrawal.status == 'PROCESSING' %}
+                                            <button class="btn-icon success" onclick="completeWithdrawal({{ withdrawal.id }})" title="Complete">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                            <button class="btn-icon danger" onclick="rejectWithdrawal({{ withdrawal.id }})" title="Reject">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-4">
+                                        <i class="bi bi-inbox fs-1 d-block mb-3 text-muted"></i>
+                                        <h5>No withdrawals found</h5>
+                                        <p class="text-muted">Withdrawal requests will appear here.</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investments Tab - NEW -->
+        <div id="investments" class="tab-pane {% if active_tab == 'investments' %}active{% endif %}">
+            <div class="table-header">
+                <h4>Investment Management</h4>
+                <div class="filter-group">
+                    <select class="filter-select" id="investmentStatusFilter">
+                        <option value="ACTIVE">Active</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                        <option value="">All</option>
+                    </select>
+                    <button class="btn-action" onclick="filterInvestments()">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="modern-table" id="investmentsTable">
+                        <thead>
+                            <tr>
+                                <th>Investment ID</th>
+                                <th>User</th>
+                                <th>Token</th>
+                                <th>Amount</th>
+                                <th>Daily Return</th>
+                                <th>Progress</th>
+                                <th>Total Paid</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="investmentsTableBody">
+                            {% if investments_data %}
+                                {% for investment in investments_data %}
+                                <tr id="investment-{{ investment.id }}">
+                                    <td><code>{{ investment.investment_id|truncatechars:8 }}</code></td>
+                                    <td>
+                                        <div class="user-cell">
+                                            <div class="user-avatar-sm">{{ investment.user|first|upper }}</div>
+                                            <span>{{ investment.user }}</span>
+                                        </div>
+                                    </td>
+                                    <td><strong>{{ investment.token_name }}</strong></td>
+                                    <td class="amount">{{ investment.amount|floatformat:2 }} KSH</td>
+                                    <td class="amount-positive">{{ investment.daily_return|floatformat:2 }} KSH</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 6px; width: 100px;">
+                                                <div class="progress-bar" style="width: {{ investment.progress_percentage }}%"></div>
+                                            </div>
+                                            <small>{{ investment.progress_percentage|floatformat:0 }}%</small>
+                                        </div>
+                                    </td>
+                                    <td class="amount-positive">{{ investment.total_paid|floatformat:2 }} KSH</td>
+                                    <td>{{ investment.start_date|date:"Y-m-d" }}</td>
+                                    <td>{{ investment.end_date|date:"Y-m-d" }}</td>
+                                    <td>
+                                        <span class="status-badge 
+                                            {% if investment.status == 'ACTIVE' %}verified
+                                            {% elif investment.status == 'COMPLETED' %}success
+                                            {% elif investment.status == 'CANCELLED' %}rejected
+                                            {% endif %}">
+                                            {{ investment.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn-icon info" onclick="viewInvestmentDetails({{ investment.id }})" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            {% if investment.status == 'ACTIVE' %}
+                                            <button class="btn-icon warning" onclick="processPayout({{ investment.id }})" title="Process Payout">
+                                                <i class="bi bi-cash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="11" class="text-center py-4">
+                                        <i class="bi bi-inbox fs-1 d-block mb-3 text-muted"></i>
+                                        <h5>No investments found</h5>
+                                        <p class="text-muted">Investments will appear here once users start investing.</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="users" class="tab-pane {% if active_tab == 'users' %}active{% endif %}">
+            <div class="table-header">
+                <h4>User Management <span class="text-muted fs-6">({{ dashboard_stats.total_users }} total)</span></h4>
+                <div class="filter-group">
+                    <div class="search-box">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="userSearch" placeholder="Search users...">
+                    </div>
+                    <select class="filter-select" id="userVerifiedFilter">
+                        <option value="">All Status</option>
+                        <option value="verified">Verified Only</option>
+                        <option value="unverified">Unverified Only</option>
+                    </select>
+                    <select class="filter-select" id="userBannedFilter">
+                        <option value="">All Users</option>
+                        <option value="active">Active Only</option>
+                        <option value="banned">Banned Only</option>
+                    </select>
+                    <button class="btn-action" onclick="filterUsers()">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="modern-table" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Balance</th>
+                                <th>Locked</th>
+                                <th>Verification</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            {% if users_data %}
+                                {% for user_data in users_data %}
+                                <tr id="user-{{ user_data.id }}">
+                                    <td>#{{ user_data.id }}</td>
+                                    <td>
+                                        <div class="user-cell">
+                                            <div class="user-avatar-sm">{{ user_data.first_name|first|default:user_data.username|first|upper }}</div>
+                                            <div>
+                                                <strong>{{ user_data.username }}</strong>
+                                                <small class="d-block text-muted">{{ user_data.first_name }} {{ user_data.last_name }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user_data.email }}</td>
+                                    <td>{{ user_data.phone }}</td>
+                                    <td class="amount">{{ user_data.balance|floatformat:2 }} KSH</td>
+                                    <td>{{ user_data.locked_balance|default:"0.00"|floatformat:2 }} KSH</td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            {% if user_data.phone_verified %}
+                                            <span class="badge bg-success" title="Phone Verified"><i class="bi bi-check-circle"></i></span>
+                                            {% else %}
+                                            <span class="badge bg-secondary" title="Phone Unverified"><i class="bi bi-x-circle"></i></span>
+                                            {% endif %}
+                                            {% if user_data.id_verified %}
+                                            <span class="badge bg-success" title="ID Verified"><i class="bi bi-shield-check"></i></span>
+                                            {% else %}
+                                            <span class="badge bg-secondary" title="ID Unverified"><i class="bi bi-shield-x"></i></span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if user_data.is_banned %}
+                                        <span class="status-badge rejected">Banned</span>
+                                        {% else %}
+                                        <span class="status-badge verified">Active</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user_data.date_joined }}</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn-icon info" onclick="viewUserDetails({{ user_data.id }})" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn-icon warning" onclick="adjustBalance({{ user_data.id }})" title="Adjust Balance">
+                                                <i class="bi bi-cash"></i>
+                                            </button>
+                                            {% if user_data.is_banned %}
+                                            <button class="btn-icon success" onclick="toggleUserBan({{ user_data.id }}, false)" title="Unban">
+                                                <i class="bi bi-unlock"></i>
+                                            </button>
+                                            {% else %}
+                                            <button class="btn-icon danger" onclick="toggleUserBan({{ user_data.id }}, true)" title="Ban">
+                                                <i class="bi bi-lock"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="10" class="text-center py-4">
+                                        <i class="bi bi-inbox fs-1 d-block mb-3 text-muted"></i>
+                                        <h5>No users found</h5>
+                                        <p class="text-muted">Users will appear here once they register.</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if users_pagination and users_pagination.total_pages > 1 %}
+                <div class="pagination-wrapper">
+                    <span class="text-muted">Page {{ users_pagination.current_page }} of {{ users_pagination.total_pages }}</span>
+                    <nav>
+                        <ul class="pagination">
+                            {% if users_pagination.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?user_page={{ users_pagination.current_page|add:-1 }}#users">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ users_pagination.current_page }}</span>
+                            </li>
+                            {% if users_pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?user_page={{ users_pagination.current_page|add:1 }}#users">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Tokens Tab -->
+        <div id="tokens" class="tab-pane {% if active_tab == 'tokens' %}active{% endif %}">
+            <div class="table-header">
+                <h4>Token Management</h4>
+                <button class="btn-action" onclick="openTokenModal()">
+                    <i class="bi bi-plus-circle me-2"></i>Create New Token
+                </button>
+            </div>
+            
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="modern-table" id="tokensTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Display Name</th>
+                                <th>Min Investment</th>
+                                <th>Daily Return</th>
+                                <th>Return Days</th>
+                                <th>Total Return</th>
+                                <th>ROI</th>
+                                <th>Available</th>
+                                <th>Max/User</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tokensTableBody">
+                            {% if tokens_data %}
+                                {% for token in tokens_data %}
+                                <tr id="token-{{ token.id }}">
+                                    <td>{{ token.token_number }}</td>
+                                    <td><strong>{{ token.name }}</strong></td>
+                                    <td>{{ token.display_name }}</td>
+                                    <td class="amount">{{ token.minimum_investment|floatformat:0 }} KSH</td>
+                                    <td class="amount-positive">{{ token.daily_return|floatformat:2 }} KSH</td>
+                                    <td>{{ token.return_days }}</td>
+                                    <td class="amount">{{ token.total_return|floatformat:2 }} KSH</td>
+                                    <td>
+                                        <span class="badge bg-success">{{ token.roi|floatformat:1 }}%</span>
+                                    </td>
+                                    <td>{{ token.purchased_count }}/{{ token.total_supply|default:"∞" }}</td>
+                                    <td>{{ token.max_purchases_per_user|default:"1" }}</td>
+                                    <td>
+                                        <span class="status-badge 
+                                            {% if token.status == 'ACTIVE' %}verified
+                                            {% elif token.status == 'INACTIVE' %}pending
+                                            {% elif token.status == 'COMING_SOON' %}processing
+                                            {% elif token.status == 'SOLD_OUT' %}rejected
+                                            {% endif %}">
+                                            {{ token.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn-icon primary" onclick="editToken({{ token.id }})" title="Edit Token">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn-icon info" onclick="viewTokenDetails({{ token.id }})" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="12" class="text-center py-4">
+                                        <i class="bi bi-inbox fs-1 d-block mb-3 text-muted"></i>
+                                        <h5>No tokens found</h5>
+                                        <p class="text-muted">Create your first token using the button above.</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- KYC Tab -->
+        <div id="kyc" class="tab-pane {% if active_tab == 'kyc' %}active{% endif %}">
+            <div class="table-header">
+                <h4>KYC Verification Requests <span class="badge bg-warning ms-2">{{ dashboard_stats.pending_kyc }}</span></h4>
+            </div>
+            
+            <div class="kyc-grid">
+                {% if kyc_pending_data %}
+                    {% for kyc in kyc_pending_data %}
+                    <div class="kyc-card" id="kyc-{{ kyc.id }}">
+                        <div class="kyc-header">
+                            <div class="user-cell">
+                                <div class="user-avatar-sm">{{ kyc.username|first|upper }}</div>
+                                <div>
+                                    <h6 class="mb-0">{{ kyc.full_name }}</h6>
+                                    <small class="text-muted">{{ kyc.username }}</small>
+                                </div>
+                            </div>
+                            <span class="status-badge pending">Pending</span>
+                        </div>
+                        
+                        <p><i class="bi bi-phone me-2"></i>{{ kyc.phone }}</p>
+                        
+                        <div class="kyc-documents">
+                            {% if kyc.has_id_front %}
+                            <img src="{{ kyc.id_front_url }}" class="kyc-doc-preview" onclick="viewImage('{{ kyc.id_front_url }}')" alt="ID Front">
+                            {% endif %}
+                            {% if kyc.has_id_back %}
+                            <img src="{{ kyc.id_back_url }}" class="kyc-doc-preview" onclick="viewImage('{{ kyc.id_back_url }}')" alt="ID Back">
+                            {% endif %}
+                            {% if kyc.has_selfie %}
+                            <img src="{{ kyc.selfie_url }}" class="kyc-doc-preview" onclick="viewImage('{{ kyc.selfie_url }}')" alt="Selfie">
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="phoneVerify{{ kyc.id }}" {% if kyc.phone_verified %}checked{% endif %}>
+                                <label class="form-check-label">Phone</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="idVerify{{ kyc.id }}" {% if kyc.id_verified %}checked{% endif %}>
+                                <label class="form-check-label">ID</label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2 mt-3">
+                            <button class="btn-action" style="flex: 1;" onclick="verifyKyc({{ kyc.id }})">
+                                <i class="bi bi-check-all me-2"></i>Verify Selected
+                            </button>
+                            <button class="btn-action" style="flex: 1;" onclick="rejectKyc({{ kyc.id }})">
+                                <i class="bi bi-x-lg me-2"></i>Reject
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-shield-check fs-1 text-muted"></i>
+                        <p class="mt-3">No pending KYC requests</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Transactions Tab - NEW -->
+        <div id="transactions" class="tab-pane {% if active_tab == 'transactions' %}active{% endif %}">
+            <div class="table-header">
+                <h4>All Transactions</h4>
+                <div class="filter-group">
+                    <select class="filter-select" id="transactionTypeFilter">
+                        <option value="">All Types</option>
+                        <option value="DEPOSIT">Deposits</option>
+                        <option value="WITHDRAWAL">Withdrawals</option>
+                        <option value="INVESTMENT">Investments</option>
+                        <option value="PROFIT">Profits</option>
+                        <option value="REFERRAL_BONUS">Referral Bonuses</option>
+                        <option value="PENALTY">Penalties</option>
+                        <option value="ADJUSTMENT">Adjustments</option>
+                    </select>
+                    <select class="filter-select" id="transactionStatusFilter">
+                        <option value="">All Status</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="FAILED">Failed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+                    <button class="btn-action" onclick="filterTransactions()">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="modern-table" id="transactionsTable">
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>User</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Description</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionsTableBody">
+                            {% if transactions_data %}
+                                {% for transaction in transactions_data %}
+                                <tr>
+                                    <td><code>{{ transaction.transaction_id|truncatechars:10 }}</code></td>
+                                    <td>
+                                        <div class="user-cell">
+                                            <div class="user-avatar-sm">{{ transaction.user|first|upper }}</div>
+                                            <span>{{ transaction.user }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge 
+                                            {% if transaction.type == 'DEPOSIT' %}verified
+                                            {% elif transaction.type == 'WITHDRAWAL' %}processing
+                                            {% elif transaction.type == 'PROFIT' %}success
+                                            {% elif transaction.type == 'REFERRAL_BONUS' %}info
+                                            {% elif transaction.type == 'PENALTY' %}rejected
+                                            {% endif %}">
+                                            {{ transaction.type }}
+                                        </span>
+                                    </td>
+                                    <td class="amount 
+                                        {% if transaction.type == 'WITHDRAWAL' or transaction.type == 'PENALTY' %}amount-negative
+                                        {% else %}amount-positive{% endif %}">
+                                        {% if transaction.type == 'WITHDRAWAL' or transaction.type == 'PENALTY' %}-{% else %}+{% endif %}
+                                        {{ transaction.amount|floatformat:2 }} KSH
+                                    </td>
+                                    <td>{{ transaction.description|truncatechars:30 }}</td>
+                                    <td>{{ transaction.created_at }}</td>
+                                    <td>
+                                        <span class="status-badge 
+                                            {% if transaction.status == 'COMPLETED' %}verified
+                                            {% elif transaction.status == 'PENDING' %}pending
+                                            {% elif transaction.status == 'FAILED' %}rejected
+                                            {% endif %}">
+                                            {{ transaction.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn-icon info" onclick="viewTransactionDetails({{ transaction.id }})" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <i class="bi bi-inbox fs-1 d-block mb-3 text-muted"></i>
+                                        <h5>No transactions found</h5>
+                                        <p class="text-muted">Transactions will appear here once users start using the platform.</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Logs Tab -->
+        <div id="logs" class="tab-pane {% if active_tab == 'logs' %}active{% endif %}">
+            <div class="table-header">
+                <h4>System Logs</h4>
+                <div class="filter-group">
+                    <select class="filter-select" id="logTypeFilter">
+                        <option value="">All Types</option>
+                        {% for type in log_type_choices %}
+                        <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn-action" onclick="filterLogs()">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="modern-table" id="logsTable">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Description</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            {% if logs_data %}
+                                {% for log in logs_data %}
+                                <tr>
+                                    <td><small>{{ log.created_at }}</small></td>
+                                    <td>
+                                        <span class="status-badge 
+                                            {% if log.type == 'ERROR' %}rejected
+                                            {% elif log.type == 'WARNING' %}pending
+                                            {% elif log.type == 'CRITICAL' %}danger
+                                            {% else %}verified
+                                            {% endif %}">
+                                            {{ log.type }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.user }}</td>
+                                    <td><code>{{ log.action }}</code></td>
+                                    <td>{{ log.description }}</td>
+                                    <td><small>{{ log.ip|default:"—" }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <i class="bi bi-inbox fs-1 d-block mb-3 text-muted"></i>
+                                        <h5>No logs found</h5>
+                                        <p class="text-muted">System logs will appear here.</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if logs_pagination and logs_pagination.total_pages > 1 %}
+                <div class="pagination-wrapper">
+                    <span class="text-muted">Page {{ logs_pagination.current_page }} of {{ logs_pagination.total_pages }}</span>
+                    <nav>
+                        <ul class="pagination">
+                            {% if logs_pagination.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?log_page={{ logs_pagination.current_page|add:-1 }}#logs">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ logs_pagination.current_page }}</span>
+                            </li>
+                            {% if logs_pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?log_page={{ logs_pagination.current_page|add:1 }}#logs">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-pane {% if active_tab == 'settings' %}active{% endif %}">
+            <div class="table-header">
+                <h4>System Configuration</h4>
+                <button class="btn-action" onclick="saveSettings()">
+                    <i class="bi bi-save me-2"></i>Save All Changes
+                </button>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="table-container">
+                        <h5 class="mb-3">Deposit Settings</h5>
+                        <div class="form-group">
+                            <label>Minimum Deposit (KSH)</label>
+                            <input type="number" class="form-control" id="config_min_deposit" value="{{ configs.min_deposit }}">
+                        </div>
+                        <div class="form-group">
+                            <label>M-Pesa Paybill</label>
+                            <input type="text" class="form-control" id="config_mpesa_paybill" value="{{ configs.mpesa_paybill }}">
+                        </div>
+                        <div class="form-group">
+                            <label>M-Pesa Account Number</label>
+                            <input type="text" class="form-control" id="config_mpesa_account" value="{{ configs.mpesa_account }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="table-container">
+                        <h5 class="mb-3">Withdrawal Settings</h5>
+                        <div class="form-group">
+                            <label>Minimum Withdrawal (KSH)</label>
+                            <input type="number" class="form-control" id="config_min_withdrawal" value="{{ configs.min_withdrawal }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Withdrawal Tax (%)</label>
+                            <input type="number" step="0.1" class="form-control" id="config_withdrawal_tax" value="{{ configs.withdrawal_tax }}">
+                        </div>
+                    </div>
+                    
+                    <div class="table-container mt-4">
+                        <h5 class="mb-3">Referral Settings</h5>
+                        <div class="form-group">
+                            <label>Referral Commission (%)</label>
+                            <input type="number" step="0.1" class="form-control" id="config_referral_commission" value="{{ configs.referral_commission }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12">
+                    <div class="table-container">
+                        <h5 class="mb-3">Site Information</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Site Name</label>
+                                    <input type="text" class="form-control" id="config_site_name" value="{{ configs.site_name }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Support Email</label>
+                                    <input type="email" class="form-control" id="config_support_email" value="{{ configs.support_email }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Support Phone</label>
+                                    <input type="text" class="form-control" id="config_support_phone" value="{{ configs.support_phone }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ========== MODALS ========== -->
+
+<!-- Token Modal (Create/Edit) -->
+<div class="modal fade" id="tokenModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tokenModalTitle">Create New Token</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="tokenForm">
+                    <input type="hidden" id="tokenId" name="token_id">
+                    
+                    <div class="form-group">
+                        <label>Token Name <span class="text-muted">(e.g., XMR-1)</span></label>
+                        <input type="text" class="form-control" id="tokenName" name="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Display Name <span class="text-muted">(e.g., Monero Classic)</span></label>
+                        <input type="text" class="form-control" id="tokenDisplayName" name="display_name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Token Number (1-20)</label>
+                        <input type="number" class="form-control" id="tokenNumber" name="token_number" min="1" max="20" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Minimum Investment (KSH)</label>
+                                <input type="number" class="form-control" id="tokenMinInvestment" name="minimum_investment" step="0.01" value="800" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Daily Return (KSH)</label>
+                                <input type="number" class="form-control" id="tokenDailyReturn" name="daily_return" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Return Days</label>
+                                <input type="number" class="form-control" id="tokenReturnDays" name="return_days" value="12" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Status</label>
+                                <select class="form-control" id="tokenStatus" name="status">
+                                    <option value="ACTIVE">Active</option>
+                                    <option value="INACTIVE">Inactive</option>
+                                    <option value="COMING_SOON">Coming Soon</option>
+                                    <option value="SOLD_OUT">Sold Out</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Max Purchases/User</label>
+                                <input type="number" class="form-control" id="tokenMaxPurchases" name="max_purchases_per_user" value="1" min="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Total Supply (Leave empty for unlimited)</label>
+                                <input type="number" class="form-control" id="tokenTotalSupply" name="total_supply">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea class="form-control" id="tokenDescription" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Icon Class</label>
+                                <input type="text" class="form-control" id="tokenIcon" name="icon" placeholder="bi bi-coin">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Color</label>
+                                <select class="form-control" id="tokenColor" name="color">
+                                    <option value="primary">Primary</option>
+                                    <option value="success">Success</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="danger">Danger</option>
+                                    <option value="info">Info</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveToken()" style="background: #f15a24; border: none;">
+                    <i class="bi bi-check-circle me-2"></i>Save Token
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Details Modal -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">User Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="userDetailsContent">
+                Loading...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Adjust Balance Modal -->
+<div class="modal fade" id="adjustBalanceModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adjust User Balance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="adjustBalanceForm">
+                    <input type="hidden" id="adjustUserId" name="user_id">
+                    
+                    <div class="form-group">
+                        <label>Amount (KSH)</label>
+                        <input type="number" class="form-control" id="adjustAmount" name="amount" step="0.01" required>
+                        <small class="text-muted">Use positive to add, negative to subtract</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" class="form-control" id="adjustDescription" name="description" value="Admin adjustment">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitBalanceAdjustment()" style="background: #f15a24; border: none;">
+                    <i class="bi bi-check-circle me-2"></i>Adjust Balance
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Investment Details Modal -->
+<div class="modal fade" id="investmentDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Investment Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="investmentDetailsContent">
+                Loading...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Details Modal -->
+<div class="modal fade" id="transactionDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Transaction Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="transactionDetailsContent">
+                Loading...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Verification Modal -->
+<div class="modal fade" id="verificationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">KYC Verification</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="verificationModalContent">
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="verifyKycFromModal()">Verify All</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Preview Modal -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Document Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img src="" id="previewImage" class="img-fluid" alt="Document">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalTitle">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmModalMessage">
+                Are you sure?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmModalBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+
+<script>
+    // ========== GLOBAL VARIABLES ==========
+    let currentTab = '{{ active_tab|default:"dashboard" }}';
+    let chartInstance = null;
+    let tokenModal = null;
+    let userDetailsModal = null;
+    let adjustBalanceModal = null;
+    let investmentDetailsModal = null;
+    let transactionDetailsModal = null;
+    let verificationModal = null;
+    let imagePreviewModal = null;
+    let confirmModal = null;
+    let currentAction = null;
+    let currentItemId = null;
+    let currentItemData = null;
+
+    // API URL from Django
+    const API_URL = '{% url "XMR:admin_api" %}';   
+    const CSRF_TOKEN = '{{ csrf_token }}';
+
+    // ========== INITIALIZATION ==========
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Bootstrap modals
+        tokenModal = new bootstrap.Modal(document.getElementById('tokenModal'));
+        userDetailsModal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+        adjustBalanceModal = new bootstrap.Modal(document.getElementById('adjustBalanceModal'));
+        investmentDetailsModal = new bootstrap.Modal(document.getElementById('investmentDetailsModal'));
+        transactionDetailsModal = new bootstrap.Modal(document.getElementById('transactionDetailsModal'));
+        verificationModal = new bootstrap.Modal(document.getElementById('verificationModal'));
+        imagePreviewModal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+        confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+
+        // Load daily deposits chart if on dashboard
+        if (document.getElementById('depositsChart')) {
+            loadDepositsChart();
+        }
+
+        // Add event listeners
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+        // Debug: Log data to console
+        console.log('Dashboard Stats:', {{ dashboard_stats|safe }});
+        console.log('Deposits Data Count:', {{ deposits_data|length }});
+        console.log('Withdrawals Data Count:', {{ withdrawals_data|length }});
+        console.log('Users Data Count:', {{ users_data|length }});
+        console.log('Tokens Data Count:', {{ tokens_data|length }});
+        console.log('KYC Data Count:', {{ kyc_pending_data|length }});
+        console.log('Logs Data Count:', {{ logs_data|length }});
+
+        // Check if we need to switch to a tab from URL hash
+        if (window.location.hash) {
+            const tabId = window.location.hash.substring(1);
+            if (document.getElementById(tabId)) {
+                switchTab(tabId);
+            }
+        }
+    });
+
+    // ========== THEME TOGGLE ==========
+    function toggleTheme() {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-bs-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-bs-theme', newTheme);
+        localStorage.setItem('admin-theme', newTheme);
+    }
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('admin-theme') || 'light';
+    document.documentElement.setAttribute('data-bs-theme', savedTheme);
+
+    // ========== TAB SWITCHING ==========
+    function switchTab(tabId) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-pane').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Show selected tab
+        const selectedTab = document.getElementById(tabId);
+        if (selectedTab) {
+            selectedTab.classList.add('active');
+        }
+        
+        // Update sidebar active states
+        document.querySelectorAll('.nav-link-sidebar').forEach(link => {
+            link.classList.remove('active');
+        });
+        
+        // Find and activate the corresponding sidebar link
+        const activeLink = Array.from(document.querySelectorAll('.nav-link-sidebar')).find(
+            link => link.getAttribute('onclick')?.includes(tabId)
+        );
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
+        
+        // Update URL hash
+        window.location.hash = tabId;
+        currentTab = tabId;
+    }
+
+    // ========== CHART LOADING ==========
+    function loadDepositsChart() {
+        const canvas = document.getElementById('depositsChart');
+        if (!canvas) return;
+        
+        // Get daily deposits data from template
+        {% if daily_deposits %}
+        const dailyDeposits = JSON.parse('{{ daily_deposits|safe }}');
+        {% else %}
+        const dailyDeposits = [];
+        {% endif %}
+        
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+        
+        const ctx = canvas.getContext('2d');
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dailyDeposits.map(d => d.date),
+                datasets: [{
+                    label: 'Deposits (KSH)',
+                    data: dailyDeposits.map(d => d.total),
+                    borderColor: '#f15a24',
+                    backgroundColor: 'rgba(241, 90, 36, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#f15a24',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `KSH ${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'KSH ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ========== TOAST NOTIFICATIONS ==========
+    function showToast(message, type = 'success') {
+        const toastContainer = document.getElementById('toastContainer');
+        const toastId = 'toast-' + Date.now();
+        
+        const bgColor = type === 'success' ? '#10b981' : 
+                       type === 'error' ? '#ef4444' : 
+                       type === 'warning' ? '#f59e0b' : '#3b82f6';
+        
+        const toast = document.createElement('div');
+        toast.id = toastId;
+        toast.className = 'toast align-items-center border-0';
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body" style="color: white; background: ${bgColor}; border-radius: 12px 0 0 12px; padding: 0.75rem 1rem;">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        toastContainer.appendChild(toast);
+        
+        const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
+        bsToast.show();
+        
+        // Remove after hidden
+        toast.addEventListener('hidden.bs.toast', function() {
+            toast.remove();
+        });
+    }
+
+    // ========== LOADING SPINNER ==========
+    function showLoading() {
+        document.getElementById('loadingSpinner').style.display = 'flex';
+    }
+
+    function hideLoading() {
+        document.getElementById('loadingSpinner').style.display = 'none';
+    }
+
+    // ========== API CALLS ==========
+    async function apiCall(action, data) {
+        showLoading();
+        
+        const formData = new FormData();
+        formData.append('action', action);
+        formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
+        
+        for (let key in data) {
+            formData.append(key, data[key]);
+        }
+        
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            hideLoading();
+            
+            if (result.success) {
+                showToast(result.message || 'Action completed successfully', 'success');
+            } else {
+                showToast(result.error || 'An error occurred', 'error');
+            }
+            
+            return result;
+        } catch (error) {
+            hideLoading();
+            showToast('Network error: ' + error.message, 'error');
+            console.error('API Error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // ========== DEPOSIT ACTIONS ==========
+    function filterDeposits() {
+        const status = document.getElementById('depositStatusFilter').value;
+        window.location.href = `?deposit_status=${status}#deposits`;
+    }
+
+    async function verifyDeposit(depositId) {
+        document.getElementById('confirmModalTitle').textContent = 'Verify Deposit';
+        document.getElementById('confirmModalMessage').textContent = 'Are you sure you want to verify this deposit? This will add funds to the user\'s wallet.';
+        document.getElementById('confirmModalBtn').className = 'btn btn-success';
+        document.getElementById('confirmModalBtn').textContent = 'Verify';
+        
+        currentAction = 'verifyDeposit';
+        currentItemId = depositId;
+        confirmModal.show();
+    }
+
+    async function rejectDeposit(depositId) {
+        const reason = prompt('Enter rejection reason:');
+        if (!reason) return;
+        
+        const result = await apiCall('reject_deposit', {
+            deposit_id: depositId,
+            reason: reason
+        });
+        
+        if (result.success) {
+            document.getElementById(`deposit-${depositId}`).remove();
+            updateNotificationCounts();
+        }
+    }
+
+    // ========== WITHDRAWAL ACTIONS ==========
+    function filterWithdrawals() {
+        const status = document.getElementById('withdrawalStatusFilter').value;
+        window.location.href = `?withdrawal_status=${status}#withdrawals`;
+    }
+
+    async function processWithdrawal(withdrawalId) {
+        const result = await apiCall('process_withdrawal', {
+            withdrawal_id: withdrawalId
+        });
+        
+        if (result.success) {
+            const row = document.getElementById(`withdrawal-${withdrawalId}`);
+            if (row) {
+                const statusCell = row.querySelector('.status-badge');
+                if (statusCell) {
+                    statusCell.className = 'status-badge processing';
+                    statusCell.textContent = 'PROCESSING';
+                }
+            }
+        }
+    }
+
+    async function completeWithdrawal(withdrawalId) {
+        const transactionCode = prompt('Enter transaction code (M-Pesa/Bank):');
+        if (!transactionCode) return;
+        
+        const result = await apiCall('complete_withdrawal', {
+            withdrawal_id: withdrawalId,
+            transaction_code: transactionCode
+        });
+        
+        if (result.success) {
+            const row = document.getElementById(`withdrawal-${withdrawalId}`);
+            if (row) {
+                row.remove();
+                updateNotificationCounts();
+            }
+        }
+    }
+
+    async function rejectWithdrawal(withdrawalId) {
+        const reason = prompt('Enter rejection reason:');
+        if (!reason) return;
+        
+        const result = await apiCall('reject_withdrawal', {
+            withdrawal_id: withdrawalId,
+            reason: reason
+        });
+        
+        if (result.success) {
+            const row = document.getElementById(`withdrawal-${withdrawalId}`);
+            if (row) {
+                row.remove();
+                updateNotificationCounts();
+            }
+        }
+    }
+
+    // ========== INVESTMENT ACTIONS ==========
+    function filterInvestments() {
+        const status = document.getElementById('investmentStatusFilter').value;
+        // Implement filtering logic or redirect
+        window.location.href = `?investment_status=${status}#investments`;
+    }
+
+    function viewInvestmentDetails(investmentId) {
+        // Get investment data from the table row
+        const row = document.getElementById(`investment-${investmentId}`);
+        if (!row) return;
+        
+        const cells = row.cells;
+        const investmentData = {
+            id: investmentId,
+            investmentId: cells[0].textContent,
+            user: cells[1].querySelector('span').textContent,
+            token: cells[2].textContent,
+            amount: cells[3].textContent,
+            dailyReturn: cells[4].textContent,
+            progress: cells[5].querySelector('small').textContent,
+            totalPaid: cells[6].textContent,
+            startDate: cells[7].textContent,
+            endDate: cells[8].textContent,
+            status: cells[9].textContent.trim()
+        };
+        
+        document.getElementById('investmentDetailsContent').innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Investment ID:</strong> ${investmentData.investmentId}</p>
+                    <p><strong>User:</strong> ${investmentData.user}</p>
+                    <p><strong>Token:</strong> ${investmentData.token}</p>
+                    <p><strong>Amount:</strong> ${investmentData.amount}</p>
+                    <p><strong>Daily Return:</strong> ${investmentData.dailyReturn}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Progress:</strong> ${investmentData.progress}</p>
+                    <p><strong>Total Paid:</strong> ${investmentData.totalPaid}</p>
+                    <p><strong>Start Date:</strong> ${investmentData.startDate}</p>
+                    <p><strong>End Date:</strong> ${investmentData.endDate}</p>
+                    <p><strong>Status:</strong> <span class="status-badge ${investmentData.status === 'ACTIVE' ? 'verified' : 'success'}">${investmentData.status}</span></p>
+                </div>
+            </div>
+        `;
+        investmentDetailsModal.show();
+    }
+
+    async function processPayout(investmentId) {
+        // This would be a custom API call to manually process a payout
+        const result = await apiCall('process_payout', {
+            investment_id: investmentId
+        });
+        
+        if (result.success) {
+            // Refresh or update the row
+            location.reload();
+        }
+    }
+
+    // ========== USER ACTIONS ==========
+    function filterUsers() {
+        const search = document.getElementById('userSearch').value;
+        const verified = document.getElementById('userVerifiedFilter').value;
+        const banned = document.getElementById('userBannedFilter').value;
+        
+        window.location.href = `?user_search=${search}&user_verified=${verified}&user_banned=${banned}#users`;
+    }
+
+    function viewUserDetails(userId) {
+        // Get user data from the table row
+        const row = document.getElementById(`user-${userId}`);
+        if (!row) return;
+        
+        const cells = row.cells;
+        const userData = {
+            id: userId,
+            username: cells[1].querySelector('strong').textContent,
+            fullName: cells[1].querySelector('small').textContent,
+            email: cells[2].textContent,
+            phone: cells[3].textContent,
+            balance: cells[4].textContent,
+            locked: cells[5].textContent,
+            joined: cells[8].textContent
+        };
+        
+        document.getElementById('userDetailsContent').innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>User ID:</strong> #${userData.id}</p>
+                    <p><strong>Username:</strong> ${userData.username}</p>
+                    <p><strong>Full Name:</strong> ${userData.fullName}</p>
+                    <p><strong>Email:</strong> ${userData.email}</p>
+                    <p><strong>Phone:</strong> ${userData.phone}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Balance:</strong> ${userData.balance}</p>
+                    <p><strong>Locked Balance:</strong> ${userData.locked}</p>
+                    <p><strong>Joined:</strong> ${userData.joined}</p>
+                </div>
+            </div>
+        `;
+        userDetailsModal.show();
+    }
+
+    function adjustBalance(userId) {
+        document.getElementById('adjustUserId').value = userId;
+        document.getElementById('adjustAmount').value = '';
+        document.getElementById('adjustDescription').value = 'Admin adjustment';
+        adjustBalanceModal.show();
+    }
+
+    async function submitBalanceAdjustment() {
+        const userId = document.getElementById('adjustUserId').value;
+        const amount = document.getElementById('adjustAmount').value;
+        const description = document.getElementById('adjustDescription').value;
+        
+        if (!amount) {
+            showToast('Please enter an amount', 'error');
+            return;
+        }
+        
+        const result = await apiCall('adjust_balance', {
+            user_id: userId,
+            amount: amount,
+            description: description
+        });
+        
+        if (result.success) {
+            adjustBalanceModal.hide();
+            // Update user balance in table
+            const balanceCell = document.querySelector(`#user-${userId} td:nth-child(5)`);
+            if (balanceCell && result.new_balance) {
+                balanceCell.textContent = parseFloat(result.new_balance).toFixed(2) + ' KSH';
+            }
+        }
+    }
+
+    async function toggleUserBan(userId, ban) {
+        const reason = ban ? prompt('Enter ban reason:') : '';
+        if (ban && !reason) return;
+        
+        document.getElementById('confirmModalTitle').textContent = ban ? 'Ban User' : 'Unban User';
+        document.getElementById('confirmModalMessage').textContent = ban ? 
+            'Are you sure you want to ban this user?' : 
+            'Are you sure you want to unban this user?';
+        document.getElementById('confirmModalBtn').className = ban ? 'btn btn-danger' : 'btn btn-success';
+        document.getElementById('confirmModalBtn').textContent = ban ? 'Ban' : 'Unban';
+        
+        currentAction = 'toggleUserBan';
+        currentItemId = userId;
+        currentItemData = { ban: ban, reason: reason };
+        confirmModal.show();
+    }
+
+    // ========== TOKEN ACTIONS ==========
+    function openTokenModal() {
+        document.getElementById('tokenModalTitle').textContent = 'Create New Token';
+        document.getElementById('tokenForm').reset();
+        document.getElementById('tokenId').value = '';
+        tokenModal.show();
+    }
+
+    function editToken(tokenId) {
+        // Fetch token data from the table row
+        const tokenRow = document.getElementById(`token-${tokenId}`);
+        if (!tokenRow) return;
+        
+        const cells = tokenRow.cells;
+        
+        document.getElementById('tokenModalTitle').textContent = 'Edit Token';
+        document.getElementById('tokenId').value = tokenId;
+        document.getElementById('tokenName').value = cells[1].textContent.trim();
+        document.getElementById('tokenDisplayName').value = cells[2].textContent.trim();
+        document.getElementById('tokenNumber').value = cells[0].textContent.trim();
+        document.getElementById('tokenMinInvestment').value = parseFloat(cells[3].textContent);
+        document.getElementById('tokenDailyReturn').value = parseFloat(cells[4].textContent);
+        document.getElementById('tokenReturnDays').value = parseInt(cells[5].textContent);
+        document.getElementById('tokenStatus').value = cells[10].textContent.trim();
+        document.getElementById('tokenMaxPurchases').value = parseInt(cells[9].textContent) || 1;
+        
+        const supplyText = cells[8].textContent.trim();
+        const supply = supplyText.split('/')[1];
+        document.getElementById('tokenTotalSupply').value = supply === '∞' ? '' : supply;
+        
+        tokenModal.show();
+    }
+
+    async function saveToken() {
+        const formData = {
+            name: document.getElementById('tokenName').value,
+            display_name: document.getElementById('tokenDisplayName').value,
+            token_number: document.getElementById('tokenNumber').value,
+            minimum_investment: document.getElementById('tokenMinInvestment').value,
+            daily_return: document.getElementById('tokenDailyReturn').value,
+            return_days: document.getElementById('tokenReturnDays').value,
+            status: document.getElementById('tokenStatus').value,
+            max_purchases_per_user: document.getElementById('tokenMaxPurchases').value,
+            total_supply: document.getElementById('tokenTotalSupply').value || '',
+            description: document.getElementById('tokenDescription').value,
+            icon: document.getElementById('tokenIcon').value,
+            color: document.getElementById('tokenColor').value
+        };
+        
+        const tokenId = document.getElementById('tokenId').value;
+        const action = tokenId ? 'update_token' : 'create_token';
+        
+        if (tokenId) {
+            formData.token_id = tokenId;
+        }
+        
+        const result = await apiCall(action, formData);
+        
+        if (result.success) {
+            tokenModal.hide();
+            // Reload the page to show updated tokens after a short delay
+            setTimeout(() => location.reload(), 1500);
+        }
+    }
+
+    function viewTokenDetails(tokenId) {
+        const tokenRow = document.getElementById(`token-${tokenId}`);
+        if (!tokenRow) return;
+        
+        const cells = tokenRow.cells;
+        alert(`Token Details:\n\nName: ${cells[1].textContent}\nDisplay: ${cells[2].textContent}\nMin Investment: ${cells[3].textContent}\nDaily Return: ${cells[4].textContent}\nStatus: ${cells[10].textContent}`);
+    }
+
+    // ========== KYC ACTIONS ==========
+    async function verifyKyc(profileId) {
+        const phoneVerified = document.getElementById(`phoneVerify${profileId}`)?.checked || false;
+        const idVerified = document.getElementById(`idVerify${profileId}`)?.checked || false;
+        
+        if (!phoneVerified && !idVerified) {
+            showToast('Please select at least one verification option', 'warning');
+            return;
+        }
+        
+        if (phoneVerified && idVerified) {
+            await apiCall('verify_kyc_all', { profile_id: profileId });
+        } else {
+            if (phoneVerified) {
+                await apiCall('verify_kyc_phone', { profile_id: profileId });
+            }
+            if (idVerified) {
+                await apiCall('verify_kyc_id', { profile_id: profileId });
+            }
+        }
+        
+        document.getElementById(`kyc-${profileId}`)?.remove();
+        updateNotificationCounts();
+    }
+
+    function rejectKyc(profileId) {
+        const reason = prompt('Enter rejection reason:');
+        if (!reason) return;
+        
+        // Implement KYC rejection API call
+        alert('KYC rejection - Profile ID: ' + profileId + ', Reason: ' + reason);
+        document.getElementById(`kyc-${profileId}`)?.remove();
+        updateNotificationCounts();
+    }
+
+    function verifyKycFromModal() {
+        verificationModal.hide();
+        showToast('KYC verification completed', 'success');
+    }
+
+    // ========== TRANSACTIONS ACTIONS ==========
+    function filterTransactions() {
+        const type = document.getElementById('transactionTypeFilter').value;
+        const status = document.getElementById('transactionStatusFilter').value;
+        window.location.href = `?transaction_type=${type}&transaction_status=${status}#transactions`;
+    }
+
+    function viewTransactionDetails(transactionId) {
+        // This would typically fetch transaction details via API
+        // For now, show a simple alert
+        alert('Transaction ID: ' + transactionId);
+    }
+
+    // ========== LOGS ACTIONS ==========
+    function filterLogs() {
+        const type = document.getElementById('logTypeFilter').value;
+        window.location.href = `?log_type=${type}#logs`;
+    }
+
+    // ========== SETTINGS ACTIONS ==========
+    async function saveSettings() {
+        const settings = {
+            config_min_deposit: document.getElementById('config_min_deposit')?.value || '800',
+            config_mpesa_paybill: document.getElementById('config_mpesa_paybill')?.value || '123456',
+            config_mpesa_account: document.getElementById('config_mpesa_account')?.value || 'INVEST',
+            config_min_withdrawal: document.getElementById('config_min_withdrawal')?.value || '200',
+            config_withdrawal_tax: document.getElementById('config_withdrawal_tax')?.value || '5',
+            config_referral_commission: document.getElementById('config_referral_commission')?.value || '5',
+            config_site_name: document.getElementById('config_site_name')?.value || 'XMR Investments',
+            config_support_email: document.getElementById('config_support_email')?.value || 'support@example.com',
+            config_support_phone: document.getElementById('config_support_phone')?.value || '0712345678'
+        };
+        
+        const result = await apiCall('update_settings', settings);
+    }
+
+    // ========== UTILITY FUNCTIONS ==========
+    function viewScreenshot(imageUrl) {
+        if (imageUrl && imageUrl !== 'None' && imageUrl !== '') {
+            viewImage(imageUrl);
+        } else {
+            showToast('No screenshot available', 'info');
+        }
+    }
+
+    function viewImage(imageUrl) {
+        document.getElementById('previewImage').src = imageUrl;
+        imagePreviewModal.show();
+    }
+
+    function updateNotificationCounts() {
+        // Update notification counts in UI
+        const deposits = document.querySelectorAll('#depositsTableBody tr').length - 1; // Subtract 1 if there's a "no data" row
+        const withdrawals = document.querySelectorAll('#withdrawalsTableBody tr').length - 1;
+        const kyc = document.querySelectorAll('.kyc-card').length;
+        
+        document.getElementById('notificationCount').textContent = deposits + withdrawals + kyc;
+        document.getElementById('pendingDepositsCount').textContent = deposits;
+        document.getElementById('pendingWithdrawalsCount').textContent = withdrawals;
+        document.getElementById('pendingKycCount').textContent = kyc;
+    }
+
+    // ========== CONFIRMATION HANDLER ==========
+    document.getElementById('confirmModalBtn')?.addEventListener('click', async function() {
+        confirmModal.hide();
+        
+        if (currentAction === 'verifyDeposit') {
+            const result = await apiCall('verify_deposit', { deposit_id: currentItemId });
+            if (result.success) {
+                document.getElementById(`deposit-${currentItemId}`)?.remove();
+                updateNotificationCounts();
+            }
+        } else if (currentAction === 'toggleUserBan') {
+            const result = await apiCall('toggle_user_ban', {
+                user_id: currentItemId,
+                reason: currentItemData?.reason || ''
+            });
+            if (result.success) {
+                const row = document.getElementById(`user-${currentItemId}`);
+                if (row) {
+                    const statusCell = row.querySelectorAll('td')[7];
+                    const banBtn = row.querySelector('.btn-icon.danger, .btn-icon.success');
+                    
+                    if (currentItemData?.ban) {
+                        statusCell.innerHTML = '<span class="status-badge rejected">Banned</span>';
+                        if (banBtn) {
+                            banBtn.className = 'btn-icon success';
+                            banBtn.innerHTML = '<i class="bi bi-unlock"></i>';
+                            banBtn.setAttribute('onclick', `toggleUserBan(${currentItemId}, false)`);
+                            banBtn.setAttribute('title', 'Unban');
+                        }
+                    } else {
+                        statusCell.innerHTML = '<span class="status-badge verified">Active</span>';
+                        if (banBtn) {
+                            banBtn.className = 'btn-icon danger';
+                            banBtn.innerHTML = '<i class="bi bi-lock"></i>';
+                            banBtn.setAttribute('onclick', `toggleUserBan(${currentItemId}, true)`);
+                            banBtn.setAttribute('title', 'Ban');
+                        }
+                    }
+                }
+            }
+        }
+        
+        currentAction = null;
+        currentItemId = null;
+        currentItemData = null;
+    });
+
+    // ========== KEYBOARD SHORTCUTS ==========
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+1 to Ctrl+9 for tab switching
+        if (e.ctrlKey && e.key >= '1' && e.key <= '9') {
+            e.preventDefault();
+            const tabs = ['dashboard', 'deposits', 'withdrawals', 'investments', 'users', 'tokens', 'kyc', 'transactions', 'logs'];
+            const index = parseInt(e.key) - 1;
+            if (tabs[index]) {
+                switchTab(tabs[index]);
+            }
+        }
+        
+        // Escape to close modals
+        if (e.key === 'Escape') {
+            const openModals = document.querySelectorAll('.modal.show');
+            openModals.forEach(modal => {
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            });
+        }
+    });
+
+    // ========== AUTO-REFRESH ==========
+    setInterval(function() {
+        if (currentTab === 'deposits') {
+            // Auto-refresh deposits every 30 seconds
+            filterDeposits();
+        } else if (currentTab === 'withdrawals') {
+            // Auto-refresh withdrawals every 30 seconds
+            filterWithdrawals();
+        }
+    }, 30000);
+</script>
+</body>
+</html>

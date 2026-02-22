@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monero · signup / login (national ID verified)</title>
+  <!-- Google Fonts: premium readability -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5.3 + icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    :root {
+      --xmr-bg: #f5f7fc;
+      --xmr-card: #ffffff;
+      --xmr-orange: #f60;
+      --xmr-deep: #1a1e2b;
+      --xmr-border: #eef2f6;
+    }
+    body {
+      background: linear-gradient(145deg, #f0f4fe 0%, #f8fafd 100%);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.5);
+      box-shadow: 0 40px 60px -30px rgba(0,20,40,0.2), 0 0 0 1px rgba(0,0,0,0.02);
+      border-radius: 48px;
+      max-width: 1100px;
+      width: 100%;
+    }
+    .form-card {
+      background: white;
+      border-radius: 42px;
+      box-shadow: 0 20px 35px -12px rgba(0,0,0,0.05);
+      padding: 2.2rem 2rem;
+      border: 1px solid #ffffff80;
+    }
+    .tab-switch {
+      display: flex;
+      gap: 1rem;
+      background: #f0f3f9;
+      padding: 0.4rem;
+      border-radius: 80px;
+      max-width: 280px;
+      margin-bottom: 2rem;
+    }
+    .tab-switch .tab-btn {
+      flex: 1;
+      text-align: center;
+      padding: 0.75rem 1rem;
+      border-radius: 60px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      transition: all 0.15s ease;
+      color: #5b687c;
+    }
+    .tab-switch .tab-btn.active {
+      background: white;
+      color: #1a1e2b;
+      box-shadow: 0 8px 18px -8px rgba(0,0,0,0.1);
+    }
+    .form-control, .form-select {
+      border-radius: 24px;
+      padding: 0.8rem 1.2rem;
+      border: 1.5px solid #e9ecf3;
+      background: #ffffff;
+      font-size: 0.95rem;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: #f60;
+      box-shadow: 0 0 0 4px rgba(255,102,0,0.12);
+    }
+    .btn-orange {
+      background: #f60;
+      color: white;
+      border-radius: 40px;
+      padding: 0.8rem 2rem;
+      font-weight: 600;
+      border: none;
+      width: 100%;
+      transition: 0.15s;
+    }
+    .btn-orange:hover {
+      background: #e55c00;
+      transform: scale(1.01);
+      box-shadow: 0 16px 28px -10px #f60;
+    }
+    .mono-tag {
+      font-family: 'JetBrains Mono', monospace;
+      background: #f0f3f9;
+      padding: 0.3rem 1rem;
+      border-radius: 40px;
+      font-size: 0.8rem;
+    }
+    .info-badge {
+      background: #f8fafd;
+      border-radius: 40px;
+      padding: 0.5rem 1.2rem;
+      border: 1px solid #e9ecf3;
+      font-size: 0.9rem;
+    }
+    .input-group-icon {
+      background: #f8fafd;
+      border: 1.5px solid #e9ecf3;
+      border-radius: 24px 0 0 24px;
+      border-right: none;
+      padding-left: 1.2rem;
+      display: flex;
+      align-items: center;
+      color: #f60;
+    }
+    .input-group .form-control {
+      border-left: none;
+      border-radius: 0 24px 24px 0;
+    }
+    hr { opacity: 0.2; }
+    .alert-dismissible .btn-close {
+      padding: 0.8rem;
+    }
+    .password-strength {
+      height: 4px;
+      border-radius: 2px;
+      margin-top: 6px;
+      transition: all 0.2s;
+      background: #e9ecf3;
+    }
+    .password-strength-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 2px;
+      transition: all 0.2s;
+    }
+    .whatsapp-link {
+      color: #25D366;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .whatsapp-link:hover {
+      text-decoration: underline;
+      color: #128C7E;
+    }
+    .referral-badge {
+      background: #f0f7ff;
+      border-radius: 40px;
+      padding: 0.25rem 1rem;
+      font-size: 0.85rem;
+      border: 1px dashed #f60;
+      color: #f60;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .referral-input-group {
+      background: #fafcff;
+    }
+    .back-link {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <!-- Back to home link -->
+  <div class="back-link">
+    <a href="{% url 'XMR:index' %}" class="btn btn-outline-secondary rounded-5">
+      <i class="bi bi-arrow-left"></i> back to home
+    </a>
+  </div>
+
+  <div class="glass-card p-4 p-lg-5">
+    <div class="row align-items-center g-5">
+      <!-- left side: branding / monero graphic -->
+      <div class="col-lg-5 text-center text-lg-start">
+        <div class="d-flex align-items-center gap-2 mb-4">
+          <div style="width:56px;height:56px;background:rgba(255,102,0,0.08);border-radius:24px;display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-shield-lock-fill fs-1" style="color:#f60;"></i>
+          </div>
+          <span class="fw-bold fs-2" style="color:#1b1b2c;">monero</span>
+        </div>
+        <h2 class="display-6 fw-semibold mb-3">private &<br>sovereign</h2>
+        <p class="text-secondary-emphasis mb-4">Access your dashboard with national ID–verified registration. Your data is protected — only you hold the keys.</p>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="info-badge"><i class="bi bi-check-circle-fill me-1" style="color:#f60;"></i> username</span>
+          <span class="info-badge"><i class="bi bi-check-circle-fill me-1" style="color:#f60;"></i> full name (ID match)</span>
+          <span class="info-badge"><i class="bi bi-check-circle-fill me-1" style="color:#f60;"></i> phone / ID linked</span>
+        </div>
+        <hr class="my-4">
+        <p class="small text-secondary"><i class="bi bi-incognito me-2"></i>We never store plain credentials. All verifications happen via zero‑knowledge proofs (planned).</p>
+      </div>
+
+      <!-- right side: signup / login card -->
+      <div class="col-lg-7">
+        <div class="form-card">
+          <!-- tab switcher -->
+          <div class="tab-switch" id="tabSwitch">
+            <button class="tab-btn active" id="loginTabBtn">log in</button>
+            <button class="tab-btn" id="signupTabBtn">create account</button>
+          </div>
+
+          <!-- Django messages display -->
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="bi bi-info-circle me-2"></i>{{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <!-- Display referral info from session if present -->
+          {% if request.session.referral_code %}
+          <div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
+            <i class="bi bi-gift me-2"></i>You are being referred by code: <strong>{{ request.session.referral_code }}</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+          {% endif %}
+
+          <!-- ========= LOGIN FORM ========= -->
+          <div id="loginForm">
+            <h3 class="h4 fw-semibold mb-3">welcome back</h3>
+            <p class="text-secondary small mb-4">use your username & password</p>
+            <form action="{% url 'XMR:signupin' %}" method="POST" class="needs-validation" novalidate>
+              {% csrf_token %}
+              <input type="hidden" name="action" value="login">
+              <div class="mb-4">
+                <label class="form-label fw-semibold small">username</label>
+                <div class="input-group">
+                  <span class="input-group-icon"><i class="bi bi-person"></i></span>
+                  <input type="text" class="form-control" name="login_username" placeholder="e.g. monero_fan" value="{{ request.POST.login_username }}" required>
+                </div>
+              </div>
+              <div class="mb-4">
+                <label class="form-label fw-semibold small">password</label>
+                <div class="input-group">
+                  <span class="input-group-icon"><i class="bi bi-lock"></i></span>
+                  <input type="password" class="form-control" name="login_password" placeholder="··········" required>
+                </div>
+              </div>
+              <div class="d-flex justify-content-end mb-4">
+                <a href="#" class="small text-decoration-none" style="color:#f60;" data-bs-toggle="modal" data-bs-target="#recoverModal">
+                  <i class="bi bi-whatsapp me-1 whatsapp-link" style="color:#25D366;"></i> recover account?
+                </a>
+              </div>
+              <button type="submit" class="btn-orange">log in →</button>
+              <p class="text-center text-secondary small mt-4">
+                <i class="bi bi-shield-check me-1"></i> encrypted connection
+              </p>
+            </form>
+          </div>
+
+          <!-- ========= SIGNUP FORM ========= -->
+          <div id="signupForm" style="display: none;">
+            <h3 class="h4 fw-semibold mb-3">register with national ID</h3>
+            <p class="text-secondary small mb-4">all fields must match your official ID document</p>
+            
+            <!-- Referral info banner if referral code exists in URL -->
+            {% if request.GET.ref %}
+            <div class="referral-badge mb-3">
+              <i class="bi bi-gift-fill"></i> Referral code detected: <strong>{{ request.GET.ref }}</strong>
+            </div>
+            {% endif %}
+            
+            <form action="{% url 'XMR:signupin' %}" method="POST" class="needs-validation" novalidate id="signupFormElement">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="signup">
+              
+              <!-- username -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold small"><i class="bi bi-person-badge me-1" style="color:#f60;"></i> username (unique)</label>
+                <input type="text" class="form-control" name="username" placeholder="choose a username" value="{{ request.POST.username }}" required pattern="[a-zA-Z0-9_]{3,20}" title="3-20 characters, letters, numbers, and underscores only">
+                <div class="invalid-feedback">Username must be 3-20 characters and can only contain letters, numbers, and underscores.</div>
+              </div>
+              
+              <!-- full name as per national id -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold small"><i class="bi bi-card-text me-1" style="color:#f60;"></i> full name (exactly as national ID)</label>
+                <input type="text" class="form-control" name="full_name" placeholder="e.g. Maria Gonzalez Lopez" value="{{ request.POST.full_name }}" required>
+              </div>
+              
+              <!-- email address -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold small"><i class="bi bi-envelope me-1" style="color:#f60;"></i> email address</label>
+                <input type="email" class="form-control" name="email" placeholder="you@example.com" value="{{ request.POST.email }}" required>
+                <div class="invalid-feedback">Please enter a valid email address.</div>
+              </div>
+              
+              <!-- phone number registered on the entered national ID -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold small"><i class="bi bi-phone me-1" style="color:#f60;"></i> phone number (registered to national ID)</label>
+                <input type="tel" class="form-control" name="phone" placeholder="+254 123 345678" value="{{ request.POST.phone }}" required pattern="^\+?[0-9\s\-\(\)]{8,20}$" title="Please enter a valid phone number (8-20 digits, can include +, spaces, hyphens).">
+                <div class="form-text text-secondary mono-tag mt-1">must match ID records</div>
+                <div class="invalid-feedback">Please enter a valid phone number (8-20 digits, can include +, spaces, hyphens).</div>
+              </div>
+              
+              <!-- ===== REFERRAL CODE FIELD (OPTIONAL) ===== -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold small"><i class="bi bi-gift me-1" style="color:#f60;"></i> referral code <span class="text-muted fw-normal">(optional)</span></label>
+                <div class="input-group referral-input-group">
+                  <span class="input-group-icon"><i class="bi bi-person-plus"></i></span>
+                  <input type="text" class="form-control" name="referral_code" id="referralCode" 
+                         placeholder="e.g. XMR8A2B9" 
+                         value="{% if request.GET.ref %}{{ request.GET.ref }}{% else %}{{ request.session.referral_code|default:'' }}{% endif %}">
+                </div>
+                <div class="form-text text-secondary small">
+                  <i class="bi bi-info-circle me-1"></i> Enter a referral code if someone invited you. You'll be added to their team.
+                </div>
+              </div>
+              
+              <!-- password + confirm with strength meter -->
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">password</label>
+                  <input type="password" class="form-control" name="password1" id="password1" placeholder="minimum 8 chars" required minlength="8">
+                  <div class="password-strength mt-2">
+                    <div class="password-strength-bar" id="passwordStrengthBar"></div>
+                  </div>
+                  <div class="invalid-feedback">Password must be at least 8 characters long.</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">confirm password</label>
+                  <input type="password" class="form-control" name="password2" id="password2" placeholder="re-enter" required>
+                  <div class="invalid-feedback" id="passwordMatchFeedback">Passwords must match.</div>
+                </div>
+              </div>
+              
+              <!-- terms & privacy -->
+              <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" value="" id="termsCheck" required>
+                <label class="form-check-label small text-secondary" for="termsCheck">
+                  I confirm that the information matches my national ID and I agree to the <a href="#" class="text-decoration-none" style="color:#f60;" data-bs-toggle="modal" data-bs-target="#termsModal">privacy terms</a>.
+                </label>
+              </div>
+              
+              <button type="submit" class="btn-orange">create account →</button>
+              <p class="text-center text-secondary small mt-4">
+                <i class="bi bi-shield-lock-fill me-1"></i> national ID verification (simulated)
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terms Modal -->
+  <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: 32px;">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="termsModalLabel">privacy terms</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-secondary">Your data is encrypted and never shared. National ID verification is simulated for this demo. In production, we use zero-knowledge proofs to verify without exposing your data.</p>
+          <p class="small text-secondary mb-0">By checking the box, you agree to our simulated verification process.</p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recover Account Modal with WhatsApp link -->
+  <div class="modal fade" id="recoverModal" tabindex="-1" aria-labelledby="recoverModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: 32px;">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="recoverModalLabel">recover account</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-secondary">For account recovery, please contact our support team on WhatsApp. We'll verify your national ID and help you regain access.</p>
+          <div class="d-flex justify-content-center my-4">
+            <a href="https://wa.me/2540115855856?text=Hello%2C%20I%20need%20help%20recovering%20my%20Monero%20dashboard%20account." 
+               class="btn btn-success rounded-pill px-5 py-3" 
+               target="_blank"
+               style="background:#25D366; border:none;">
+              <i class="bi bi-whatsapp me-2 fs-5"></i> +254 011 585 5856
+            </a>
+          </div>
+          <p class="small text-secondary mb-0 text-center">Click the button above to open WhatsApp with a pre-filled message.</p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    (function() {
+      // Tab switching
+      const loginTab = document.getElementById('loginTabBtn');
+      const signupTab = document.getElementById('signupTabBtn');
+      const loginFormDiv = document.getElementById('loginForm');
+      const signupFormDiv = document.getElementById('signupForm');
+
+      function setActiveTab(active) {
+        loginTab.classList.remove('active');
+        signupTab.classList.remove('active');
+        if (active === 'login') {
+          loginTab.classList.add('active');
+          loginFormDiv.style.display = 'block';
+          signupFormDiv.style.display = 'none';
+          // Clear any signup form errors
+          document.querySelectorAll('#signupFormElement .is-invalid').forEach(el => {
+            el.classList.remove('is-invalid');
+          });
+        } else {
+          signupTab.classList.add('active');
+          loginFormDiv.style.display = 'none';
+          signupFormDiv.style.display = 'block';
+        }
+      }
+
+      loginTab.addEventListener('click', (e) => {
+        e.preventDefault();
+        setActiveTab('login');
+      });
+      
+      signupTab.addEventListener('click', (e) => {
+        e.preventDefault();
+        setActiveTab('signup');
+      });
+
+      // Password strength meter
+      const password1 = document.getElementById('password1');
+      const password2 = document.getElementById('password2');
+      const strengthBar = document.getElementById('passwordStrengthBar');
+      
+      if (password1) {
+        password1.addEventListener('input', function() {
+          const val = this.value;
+          let strength = 0;
+          
+          if (val.length >= 8) strength += 25;
+          if (val.match(/[a-z]+/)) strength += 25;
+          if (val.match(/[A-Z]+/)) strength += 25;
+          if (val.match(/[0-9]+/) || val.match(/[$@#&!]+/)) strength += 25;
+          
+          strengthBar.style.width = strength + '%';
+          
+          if (strength <= 25) {
+            strengthBar.style.background = '#dc3545';
+          } else if (strength <= 50) {
+            strengthBar.style.background = '#ffc107';
+          } else if (strength <= 75) {
+            strengthBar.style.background = '#0d6efd';
+          } else {
+            strengthBar.style.background = '#198754';
+          }
+          
+          // Check password match
+          if (password2.value) {
+            validatePasswordMatch();
+          }
+        });
+      }
+      
+      if (password2) {
+        password2.addEventListener('input', validatePasswordMatch);
+      }
+      
+      function validatePasswordMatch() {
+        if (password1.value !== password2.value) {
+          password2.setCustomValidity('Passwords must match');
+          password2.classList.add('is-invalid');
+          document.getElementById('passwordMatchFeedback').style.display = 'block';
+        } else {
+          password2.setCustomValidity('');
+          password2.classList.remove('is-invalid');
+          document.getElementById('passwordMatchFeedback').style.display = 'none';
+        }
+      }
+
+      // Bootstrap form validation
+      (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms).forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+          }, false)
+        })
+      })();
+
+      // Check URL parameters for referral code and auto-select signup tab
+      const urlParams = new URLSearchParams(window.location.search);
+      const refCode = urlParams.get('ref');
+      
+      if (refCode) {
+        // Auto-select signup tab if referral code is present
+        setActiveTab('signup');
+      } else if (window.location.hash === '#signup') {
+        setActiveTab('signup');
+      } else if (window.location.hash === '#login') {
+        setActiveTab('login');
+      }
+      
+      // If there were form errors in signup, keep signup tab active
+      {% if request.POST.action == 'signup' %}
+      setActiveTab('signup');
+      {% endif %}
+      
+      // If there were form errors in login, keep login tab active
+      {% if request.POST.action == 'login' %}
+      setActiveTab('login');
+      {% endif %}
+    })();
+  </script>
+</body>
+</html>
