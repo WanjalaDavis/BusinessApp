@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-zn4^ja5q#5fty-ybo59_dym+u#_ojm%r7h2@@wvj+ht7@dxppx'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['fb2e-41-90-68-15.ngrok-free.app', 'localhost','monero.pythonanywhere.com',
     '127.0.0.1',]
@@ -90,12 +90,8 @@ SESSION_COOKIE_SAMESITE = 'None'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'monero_db',       
-        'USER': 'root',            
-        'PASSWORD': '',            
-        'HOST': '127.0.0.1',       
-        'PORT': '3306',            
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -134,6 +130,9 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
+
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATIC_URL = 'static/'
 
