@@ -37,9 +37,8 @@ def check_user_payouts(user):
     
     from .models import Investment
     from django.utils import timezone
-    from datetime import timedelta
-    
-    # Get user's active investments that still have payouts remaining
+    from datetime import timedelta    
+   
     investments = Investment.objects.filter(
         user=user,
         status='ACTIVE',
@@ -50,7 +49,7 @@ def check_user_payouts(user):
     
     for investment in investments:
         try:
-            # Use the model method we added to check and process if due
+           
             if investment.check_and_process_payout():
                 processed_count += 1
                 logger.info(f"Auto-payout processed for investment {investment.id} - User: {user.username}")
@@ -61,63 +60,6 @@ def check_user_payouts(user):
         logger.info(f"Auto-processed {processed_count} payouts for user {user.username}")
     
     return processed_count
-
-
-
-
-
-
-
-# def check_user_payouts(user):
-#     """
-#     Check and process any due payouts for a user
-#     FOR TESTING - Using 5 minute intervals
-#     """
-#     if not user.is_authenticated:
-#         return 0
-    
-#     from .models import Investment
-#     from django.utils import timezone
-#     from datetime import timedelta
-    
-#     # Get user's active investments that still have payouts remaining
-#     investments = Investment.objects.filter(
-#         user=user,
-#         status='ACTIVE',
-#         remaining_payouts__gt=0
-#     )
-    
-#     processed_count = 0
-#     now = timezone.now()
-    
-#     for investment in investments:
-#         try:
-#             # FOR TESTING: Check if 5 minutes have passed
-#             if not investment.last_payout_date:
-#                 # First payout - check if 5 minutes since creation
-#                 if now >= investment.created_at + timedelta(minutes=5):
-#                     investment.process_daily_payout()
-#                     processed_count += 1
-#                     logger.info(f"TEST: Processed first payout for investment {investment.id}")
-#             else:
-#                 # Subsequent payouts - check if 5 minutes since last payout
-#                 if now >= investment.last_payout_date + timedelta(minutes=5):
-#                     investment.process_daily_payout()
-#                     processed_count += 1
-#                     logger.info(f"TEST: Processed subsequent payout for investment {investment.id}")
-                    
-#         except Exception as e:
-#             logger.error(f"Auto-payout error for investment {investment.id}: {str(e)}")
-    
-#     if processed_count > 0:
-#         logger.info(f"TEST: Auto-processed {processed_count} payouts for user {user.username}")
-    
-#     return processed_count
-
-
-
-
-
 
 
 
@@ -766,7 +708,7 @@ def create_withdrawal(request):
             messages.error(request, f'Minimum withdrawal is {min_withdrawal} KSH')
             return redirect('XMR:account')
         
-        if wallet.available_balance() < amount:
+        if wallet.balance() < amount:
             messages.error(request, 'Insufficient balance')
             return redirect('XMR:account')
             
