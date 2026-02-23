@@ -46,9 +46,15 @@ urlpatterns = [
     # ==================== TRANSACTION ROUTES ====================
     path('transactions/', views.transactions, name='transactions'),
     
-    # ==================== ADMIN ROUTES (CONSOLIDATED) ====================
+    # ==================== ADMIN ROUTES ====================
     path('admin-panel/', views.myadmin, name='myadmin'),
     path('custom-admin/api/', views.admin_api, name='admin_api'),
+    
+    # ==================== ADMIN PAYOUT MANAGEMENT ====================
+    # These URLs are kept for manual admin triggers (now without Celery)
+    path('admin/trigger-payout/', views.admin_trigger_payout, name='admin_trigger_payout'),
+    path('admin/check-expired/', views.admin_check_expired, name='admin_check_expired'),
+    path('admin/payout-stats/', views.admin_payout_stats, name='admin_payout_stats'),
     
     # ==================== API ROUTES ====================
     path('api/wallet/balance/', views.api_wallet_balance, name='api_wallet_balance'),

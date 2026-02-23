@@ -600,6 +600,33 @@ class Investment(TimeStampedModel):
         
         self.save()
     
+    # ===== NEW METHOD ADDED FOR AUTO PAYOUT CHECKING =====
+    def check_and_process_payout(self):
+        """
+        Check if 24 hours have passed and process payout if needed
+        This can be called on every page load
+        """
+        from datetime import timedelta
+        
+        # Don't process if investment is not active
+        if self.status != 'ACTIVE' or self.remaining_payouts <= 0:
+            return False
+        
+        now = timezone.now()
+        
+        # Determine if payout is due
+        if not self.last_payout_date:
+            # First payout - check if 24 hours since creation
+            if now >= self.created_at + timedelta(hours=24):
+                return self.process_daily_payout()
+        else:
+            # Subsequent payouts - check if 24 hours since last payout
+            if now >= self.last_payout_date + timedelta(hours=24):
+                return self.process_daily_payout()
+        
+        return False
+    # ====================================================
+    
     def get_progress_percentage(self):
         """Calculate investment progress"""
         total_days = self.token.return_days

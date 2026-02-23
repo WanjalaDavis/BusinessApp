@@ -21,7 +21,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     
     <style>
-        /* Previous styles remain the same - keeping them for brevity */
+        /* Previous styles remain exactly the same - keeping them for brevity */
         * {
             margin: 0;
             padding: 0;
@@ -80,6 +80,8 @@
             --accent-danger: #ef4444;
             --accent-info: #3b82f6;
             --accent-purple: #8b5cf6;
+            --whatsapp: #25D366;
+            --telegram: #0088cc;
         }
 
         :root[data-bs-theme="dark"] {
@@ -104,8 +106,170 @@
             --accent-danger: #ef4444;
             --accent-info: #3b82f6;
             --accent-purple: #a78bfa;
+            --whatsapp: #25D366;
+            --telegram: #0088cc;
         }
 
+        /* ===== FLOATING BUTTONS STYLES - ADD THIS NEW SECTION ===== */
+        .floating-buttons {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 999;
+        }
+
+        .floating-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-xl);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .floating-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .floating-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .floating-btn:hover {
+            transform: translateY(-5px) scale(1.1);
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.4);
+        }
+
+        .floating-btn.whatsapp {
+            background: linear-gradient(135deg, var(--whatsapp), #128C7E);
+            animation: pulse-whatsapp 2s infinite;
+        }
+
+        .floating-btn.telegram {
+            background: linear-gradient(135deg, var(--telegram), #006699);
+            animation: pulse-telegram 2s infinite;
+        }
+
+        @keyframes pulse-whatsapp {
+            0% {
+                box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(37, 211, 102, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+            }
+        }
+
+        @keyframes pulse-telegram {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 136, 204, 0.5);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(0, 136, 204, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 136, 204, 0);
+            }
+        }
+
+        .floating-btn .tooltip-text {
+            position: absolute;
+            right: 75px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            color: var(--text-primary);
+            padding: 8px 15px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            pointer-events: none;
+        }
+
+        .floating-btn .tooltip-text::after {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid var(--card-bg);
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+        }
+
+        .floating-btn:hover .tooltip-text {
+            opacity: 1;
+            visibility: visible;
+            right: 85px;
+        }
+
+        /* Mobile responsive for floating buttons */
+        @media (max-width: 768px) {
+            .floating-buttons {
+                bottom: 20px;
+                right: 20px;
+                gap: 12px;
+            }
+
+            .floating-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.5rem;
+            }
+
+            .floating-btn .tooltip-text {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .floating-buttons {
+                bottom: 15px;
+                right: 15px;
+            }
+
+            .floating-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 1.3rem;
+            }
+        }
+
+        /* Rest of your existing styles continue here */
+        /* ... (keep all your existing styles from here) ... */
+        
         /* Scrollbar Styling */
         ::-webkit-scrollbar {
             width: 8px;
@@ -1443,6 +1607,27 @@
 <!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- ========== FLOATING BUTTONS - ADD THIS SECTION ========== -->
+<div class="floating-buttons">
+    <!-- WhatsApp Button -->
+    <a href="https://wa.me/254729383065?text=Hello%20Monero%20Support%2C%20I%20need%20assistance%20with%20my%20account" 
+       class="floating-btn whatsapp" 
+       target="_blank"
+       title="Chat on WhatsApp">
+        <i class="bi bi-whatsapp"></i>
+        <span class="tooltip-text">WhatsApp Support</span>
+    </a>
+    
+    <!-- Telegram Button -->
+    <a href="https://t.me/monerosupport" 
+       class="floating-btn telegram" 
+       target="_blank"
+       title="Join Telegram">
+        <i class="bi bi-telegram"></i>
+        <span class="tooltip-text">Telegram Channel</span>
+    </a>
+</div>
+
 <!-- ========== DASHBOARD WRAPPER ========== -->
 <div class="dashboard-wrapper">
     <!-- ========== SIDEBAR ========== -->
@@ -2357,10 +2542,10 @@
                 <div class="payment-instructions">
                     <h6><i class="bi bi-info-circle me-2"></i>M-Pesa Payment Instructions</h6>
                     <p>1. Go to M-Pesa on your phone</p>
-                    <p>2. Select <strong>Select Send Money</strong></p>                                       
-                    <p>3. Enter Account No: <strong class="text-primary">0712345678</strong></p>
+                    <p>2. Select <strong>Send Money</strong></p>                                       
+                    <p>3. Enter Account No: <strong class="text-primary">0729383065</strong></p>
                     <p>4. Enter Amount and complete payment</p>
-                    <p>5. Account name: WANJALA TECH</p>
+                    <p>5. Account name: Andrew Manywe</p>
                     <p class="mt-2 mb-0 text-warning"><i class="bi bi-exclamation-triangle"></i> Minimum deposit: <strong>{{ min_deposit }} KSH</strong></p>
                 </div>
                 

@@ -25,6 +25,102 @@ from .models import (
 # Set up logging
 logger = logging.getLogger(__name__)
 
+# ==================== AUTO PAYOUT HELPER FUNCTION ====================
+
+def check_user_payouts(user):
+    """
+    Check and process any due payouts for a user
+    Call this whenever a user loads a page
+    """
+    if not user.is_authenticated:
+        return 0
+    
+    from .models import Investment
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    # Get user's active investments that still have payouts remaining
+    investments = Investment.objects.filter(
+        user=user,
+        status='ACTIVE',
+        remaining_payouts__gt=0
+    )
+    
+    processed_count = 0
+    
+    for investment in investments:
+        try:
+            # Use the model method we added to check and process if due
+            if investment.check_and_process_payout():
+                processed_count += 1
+                logger.info(f"Auto-payout processed for investment {investment.id} - User: {user.username}")
+        except Exception as e:
+            logger.error(f"Auto-payout error for investment {investment.id}: {str(e)}")
+    
+    if processed_count > 0:
+        logger.info(f"Auto-processed {processed_count} payouts for user {user.username}")
+    
+    return processed_count
+
+
+
+
+
+
+
+# def check_user_payouts(user):
+#     """
+#     Check and process any due payouts for a user
+#     FOR TESTING - Using 5 minute intervals
+#     """
+#     if not user.is_authenticated:
+#         return 0
+    
+#     from .models import Investment
+#     from django.utils import timezone
+#     from datetime import timedelta
+    
+#     # Get user's active investments that still have payouts remaining
+#     investments = Investment.objects.filter(
+#         user=user,
+#         status='ACTIVE',
+#         remaining_payouts__gt=0
+#     )
+    
+#     processed_count = 0
+#     now = timezone.now()
+    
+#     for investment in investments:
+#         try:
+#             # FOR TESTING: Check if 5 minutes have passed
+#             if not investment.last_payout_date:
+#                 # First payout - check if 5 minutes since creation
+#                 if now >= investment.created_at + timedelta(minutes=5):
+#                     investment.process_daily_payout()
+#                     processed_count += 1
+#                     logger.info(f"TEST: Processed first payout for investment {investment.id}")
+#             else:
+#                 # Subsequent payouts - check if 5 minutes since last payout
+#                 if now >= investment.last_payout_date + timedelta(minutes=5):
+#                     investment.process_daily_payout()
+#                     processed_count += 1
+#                     logger.info(f"TEST: Processed subsequent payout for investment {investment.id}")
+                    
+#         except Exception as e:
+#             logger.error(f"Auto-payout error for investment {investment.id}: {str(e)}")
+    
+#     if processed_count > 0:
+#         logger.info(f"TEST: Auto-processed {processed_count} payouts for user {user.username}")
+    
+#     return processed_count
+
+
+
+
+
+
+
+
 # ==================== PUBLIC VIEWS ====================
 
 def index(request):
@@ -304,6 +400,12 @@ def signup_with_ref(request):
 @login_required(login_url='XMR:signupin')
 def account(request):
     """Consolidated user account dashboard with all features"""
+    
+    # ===== AUTO PAYOUT CHECK =====
+    # Check and process any due payouts when user visits their account
+    check_user_payouts(request.user)
+    # =============================
+    
     try:
         profile = request.user.profile
         wallet = request.user.wallet
@@ -743,6 +845,12 @@ def cancel_withdrawal(request, withdrawal_id):
 @login_required(login_url='XMR:signupin')
 def investments(request):
     """View all available investments"""
+    
+    # ===== AUTO PAYOUT CHECK =====
+    # Check and process any due payouts when user visits investments page
+    check_user_payouts(request.user)
+    # =============================
+    
     # Get active tokens
     active_tokens = Token.objects.filter(status='ACTIVE').order_by('token_number')
     
@@ -1998,3 +2106,96 @@ def check_expired_investments():
         )
     
     return count
+
+
+# ==================== CELERY TASK TRIGGERS (KEEP FOR BACKWARD COMPATIBILITY) ====================
+
+@login_required(login_url='XMR:signupin')
+def admin_trigger_payout(request):
+    """Admin view to manually trigger payouts"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        # Process directly instead of using Celery
+        processed, errors = process_daily_payouts()
+        
+        SystemLog.objects.create(
+            log_type='ADMIN_ACTION',
+            user=request.user,
+            action='MANUAL_PAYOUT_TRIGGERED',
+            description=f'Admin manually triggered payouts. Processed: {processed}, Errors: {errors}'
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Payouts processed: {processed} successful, {errors} errors',
+            'processed': processed,
+            'errors': errors
+        })
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@login_required(login_url='XMR:signupin')
+def admin_check_expired(request):
+    """Admin view to manually check expired investments"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        count = check_expired_investments()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Marked {count} investments as completed',
+            'count': count
+        })
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@login_required(login_url='XMR:signupin')
+def admin_task_status(request, task_id):
+    """Check status of a task - simplified for non-Celery setup"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    return JsonResponse({
+        'task_id': task_id,
+        'status': 'Celery not used - payouts are processed on page load',
+        'note': 'This system uses automatic payouts on page visit instead of Celery'
+    })
+
+
+@login_required(login_url='XMR:signupin')
+def admin_payout_stats(request):
+    """Get statistics about payouts"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    now = timezone.now()
+    yesterday = now - timedelta(hours=24)
+    
+    # Get investment stats
+    active_count = Investment.objects.filter(status='ACTIVE').count()
+    due_count = Investment.objects.filter(
+        status='ACTIVE',
+        remaining_payouts__gt=0
+    ).filter(
+        Q(last_payout_date__isnull=True, created_at__lte=now - timedelta(hours=24)) |
+        Q(last_payout_date__lte=now - timedelta(hours=24))
+    ).count()
+    
+    # Get recent payouts
+    recent_payouts = Transaction.objects.filter(
+        transaction_type='PROFIT',
+        created_at__gte=yesterday
+    ).count()
+    
+    return JsonResponse({
+        'active_investments': active_count,
+        'due_for_payout': due_count,
+        'payouts_last_24h': recent_payouts,
+        'last_check': str(now)
+    })
