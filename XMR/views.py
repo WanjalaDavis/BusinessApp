@@ -708,8 +708,12 @@ def create_withdrawal(request):
             messages.error(request, f'Minimum withdrawal is {min_withdrawal} KSH')
             return redirect('XMR:account')
         
-        if wallet.balance() < amount:
-            messages.error(request, 'Insufficient balance')
+        # CHECK TOTAL BALANCE, NOT AVAILABLE BALANCE
+        if wallet.balance < amount:  # Changed from available_balance() to balance
+            messages.error(
+                request, 
+                f'Insufficient balance. You have {wallet.balance} KSH total, but requested {amount} KSH.'
+            )
             return redirect('XMR:account')
             
     except (TypeError, ValueError, InvalidOperation):
@@ -754,7 +758,6 @@ def create_withdrawal(request):
         logger.error(f"Withdrawal creation error: {str(e)}", exc_info=True)
     
     return HttpResponseRedirect('/account/?tab=withdrawals')
-
 
 @login_required(login_url='XMR:signupin')
 def cancel_withdrawal(request, withdrawal_id):

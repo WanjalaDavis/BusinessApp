@@ -140,6 +140,21 @@ class Wallet(TimeStampedModel):
     
     def __str__(self):
         return f"{self.user.username}'s Wallet - Balance: {self.balance} {self.currency}"
+    
+    def can_withdraw(self, amount):
+        """Check if total balance is sufficient for withdrawal"""
+        return self.balance >= amount
+    
+    def get_breakdown(self):
+        """Get wallet breakdown for display"""
+        return {
+            'total_balance': self.balance,
+            'locked': self.locked_balance,
+            'available': self.available_balance(),
+            'deposited': self.total_deposited,
+            'withdrawn': self.total_withdrawn,
+            'earned': self.total_earned,
+        }
 
 
 class Transaction(TimeStampedModel):
@@ -691,6 +706,8 @@ class WithdrawalRequest(TimeStampedModel):
             models.Index(fields=['request_id']),
         ]
     
+    
+
     def save(self, *args, **kwargs):
         if not self.pk:  
             # Calculate 5% tax
@@ -701,12 +718,12 @@ class WithdrawalRequest(TimeStampedModel):
             if self.amount < 200:
                 raise ValidationError("Minimum withdrawal amount is 200 KSH")
             
-            # Check balance
-            wallet = self.user.wallet
-            if wallet.balance() < self.amount:
-                raise ValidationError("Insufficient balance")
             
-            # Lock the amount
+            wallet = self.user.wallet
+            if wallet.balance < self.amount:  
+                raise ValidationError(f"Insufficient balance. You have {wallet.balance} KSH total, but requested {self.amount} KSH.")
+            
+            
             wallet.locked_balance += self.amount
             wallet.save()
         
