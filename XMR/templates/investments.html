@@ -1009,7 +1009,7 @@
         <div class="row align-items-center">
             <div class="col-md-6">
                 <div class="balance-label">Your Available Balance</div>
-                <div class="balance-amount">{{ wallet.available_balance|floatformat:2 }} <small>KSH</small></div>
+                <div class="balance-amount">{{ wallet.balance|floatformat:2 }} <small>KSH</small></div>
                 <div class="balance-actions">
                     <a href="{% url 'XMR:account' %}#deposits-tab" class="btn-balance">
                         <i class="bi bi-plus-circle"></i>
