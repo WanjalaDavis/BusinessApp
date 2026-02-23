@@ -2613,7 +2613,7 @@
                     
                     <div class="form-group">
                         <label class="form-label">Amount (KSH) <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" name="amount" min="{{ min_withdrawal }}" max="{{ wallet.available_balance }}" step="0.01" required id="withdrawAmount">
+                        <input type="number" class="form-control" name="amount" min="{{ min_withdrawal }}" max="{{ wallet.balance }}" step="0.01" required id="withdrawAmount">
                         <small class="text-muted">Minimum: {{ min_withdrawal }} KSH | You'll receive: <span id="netAmount">0.00</span> KSH after 5% tax</small>
                     </div>
                     
