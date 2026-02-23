@@ -692,7 +692,7 @@ class WithdrawalRequest(TimeStampedModel):
         ]
     
     def save(self, *args, **kwargs):
-        if not self.pk:  # New request
+        if not self.pk:  
             # Calculate 5% tax
             self.tax_amount = self.amount * Decimal('0.05')
             self.net_amount = self.amount - self.tax_amount
@@ -703,7 +703,7 @@ class WithdrawalRequest(TimeStampedModel):
             
             # Check balance
             wallet = self.user.wallet
-            if wallet.available_balance() < self.amount:
+            if wallet.balance() < self.amount:
                 raise ValidationError("Insufficient balance")
             
             # Lock the amount
