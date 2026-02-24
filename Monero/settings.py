@@ -29,8 +29,8 @@ DEBUG = False
 ALLOWED_HOSTS = ['fb2e-41-90-68-15.ngrok-free.app', 'localhost','monero.pythonanywhere.com',
     '127.0.0.1',]
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://fb2e-41-90-68-15.ngrok-free.app",    
+CSRF_TRUSTED_ORIGINS = [    
+    "https://monero.pythonanywhere.com",   
 ]
 
 
@@ -93,16 +93,6 @@ DATABASES = {
     }
 }
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'monero_db',       
-#         'USER': 'root',            
-#         'PASSWORD': '',            
-#         'HOST': '127.0.0.1',       
-#         'PORT': '3306',            
-#     }
-# }
 
 
 
