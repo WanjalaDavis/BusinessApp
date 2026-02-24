@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from django.urls import reverse
 from django.utils import timezone
 from django.db.models import Sum, Q
 from django.db import transaction, IntegrityError
@@ -876,7 +877,7 @@ def create_deposit(request):
         messages.error(request, f'Error creating deposit: {str(e)}')
         logger.error(f"Deposit creation error: {str(e)}", exc_info=True)
     
-    return redirect('XMR:account#deposits-tab')
+    return HttpResponseRedirect(f"{reverse('XMR:account')}#deposits-tab")
 
 
 # ==================== WITHDRAWAL VIEWS ====================
