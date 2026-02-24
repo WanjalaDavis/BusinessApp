@@ -6,16 +6,15 @@ from django.contrib.auth.decorators import login_required
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.db.models import Sum, Q, Count, F
+from django.db.models import Sum, Q
 from django.db import transaction, IntegrityError
-from django.http import HttpResponseRedirect, JsonResponse, HttpResponseForbidden
+from django.http import HttpResponseRedirect, JsonResponse
 from django.core.paginator import Paginator
-from django.conf import settings
 from decimal import Decimal, InvalidOperation
 import re
 import json
 import logging
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 from .models import (
     UserProfile, Wallet, Transaction, MpesaPayment, 
@@ -27,18 +26,51 @@ logger = logging.getLogger(__name__)
 
 # ==================== AUTO PAYOUT HELPER FUNCTION ====================
 
+# def check_user_payouts(user):
+#     """
+#     Check and process any due payouts for a user
+#     Call this whenever a user loads a page
+#     """
+#     if not user.is_authenticated:
+#         return 0
+    
+#     from .models import Investment
+   
+#     investments = Investment.objects.filter(
+#         user=user,
+#         status='ACTIVE',
+#         remaining_payouts__gt=0
+#     )
+    
+#     processed_count = 0
+    
+#     for investment in investments:
+#         try:
+           
+#             if investment.check_and_process_payout():
+#                 processed_count += 1
+#                 logger.info(f"Auto-payout processed for investment {investment.id} - User: {user.username}")
+#         except Exception as e:
+#             logger.error(f"Auto-payout error for investment {investment.id}: {str(e)}")
+    
+#     if processed_count > 0:
+#         logger.info(f"Auto-processed {processed_count} payouts for user {user.username}")
+    
+#     return processed_count
+
+
+
+
 def check_user_payouts(user):
-    """
-    Check and process any due payouts for a user
-    Call this whenever a user loads a page
-    """
+  
     if not user.is_authenticated:
         return 0
     
     from .models import Investment
     from django.utils import timezone
-    from datetime import timedelta    
-   
+    from datetime import timedelta
+    
+    # Get user's active investments that still have payouts remaining
     investments = Investment.objects.filter(
         user=user,
         status='ACTIVE',
@@ -46,20 +78,34 @@ def check_user_payouts(user):
     )
     
     processed_count = 0
+    now = timezone.now()
     
     for investment in investments:
         try:
-           
-            if investment.check_and_process_payout():
-                processed_count += 1
-                logger.info(f"Auto-payout processed for investment {investment.id} - User: {user.username}")
+            
+            if not investment.last_payout_date:
+                
+                if now >= investment.created_at + timedelta(hours=24):
+                    investment.process_daily_payout()
+                    processed_count += 1
+                    logger.info(f"TEST: Processed first payout for investment {investment.id}")
+            else:
+                
+                if now >= investment.last_payout_date + timedelta(hours=24):
+                    investment.process_daily_payout()
+                    processed_count += 1
+                    logger.info(f"TEST: Processed subsequent payout for investment {investment.id}")
+                    
         except Exception as e:
             logger.error(f"Auto-payout error for investment {investment.id}: {str(e)}")
     
     if processed_count > 0:
-        logger.info(f"Auto-processed {processed_count} payouts for user {user.username}")
+        logger.info(f"TEST: Auto-processed {processed_count} payouts for user {user.username}")
     
     return processed_count
+
+
+
 
 
 
