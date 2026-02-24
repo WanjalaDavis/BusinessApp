@@ -72,8 +72,6 @@ def check_user_payouts(user):
     
     from .models import Investment
     from django.utils import timezone
-    from datetime import timedelta
-    import math
     
     # Get user's active investments that still have payouts remaining
     investments = Investment.objects.filter(
@@ -2316,6 +2314,10 @@ def admin_payout_stats(request):
     if not request.user.is_staff:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
     
+    # Allow both GET and POST
+    if request.method not in ['GET', 'POST']:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
     now = timezone.now()
     yesterday = now - timedelta(hours=24)
     
@@ -2335,9 +2337,82 @@ def admin_payout_stats(request):
         created_at__gte=yesterday
     ).count()
     
+    # Calculate missed payouts (investments that should have paid but haven't)
+    missed_count = Investment.objects.filter(
+        status='ACTIVE',
+        remaining_payouts__gt=0,
+        last_payout_date__lt=now - timedelta(hours=25)
+    ).count()
+    
     return JsonResponse({
+        'success': True,
         'active_investments': active_count,
         'due_for_payout': due_count,
+        'missed': missed_count,
         'payouts_last_24h': recent_payouts,
         'last_check': str(now)
     })
+
+
+
+
+@login_required(login_url='XMR:signupin')
+@transaction.atomic
+def fix_all_wallets(request):
+    """Fix all wallets with negative available balance"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    
+    if request.method not in ['GET', 'POST']:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    
+    fixed_count = 0
+    fixed_users = []
+    
+    for wallet in Wallet.objects.all():
+        # Calculate what total balance SHOULD be
+        total_deposits = Transaction.objects.filter(
+            wallet=wallet,
+            transaction_type='DEPOSIT',
+            status='COMPLETED'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        total_withdrawals = Transaction.objects.filter(
+            wallet=wallet,
+            transaction_type='WITHDRAWAL',
+            status='COMPLETED'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        total_profits = Transaction.objects.filter(
+            wallet=wallet,
+            transaction_type='PROFIT',
+            status='COMPLETED'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        # Correct total balance should be: deposits + profits - withdrawals
+        correct_balance = total_deposits + total_profits - total_withdrawals
+        
+        # If current balance is wrong, fix it
+        if wallet.balance != correct_balance:
+            old_balance = wallet.balance
+            wallet.balance = correct_balance
+            wallet.save()
+            fixed_count += 1
+            fixed_users.append(f"{wallet.user.username}")
+            
+            SystemLog.objects.create(
+                log_type='ADMIN_ACTION',
+                user=request.user,
+                action='FIXED_WALLET_BALANCE',
+                description=f'Fixed wallet for {wallet.user.username}: {old_balance} → {correct_balance}'
+            )
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'Fixed {fixed_count} wallets with incorrect balances',
+        'fixed_count': fixed_count,
+        'users': fixed_users
+    })
+    

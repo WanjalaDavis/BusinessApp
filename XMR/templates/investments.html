@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Monero · Premium Investment Marketplace</title>
+    <title>Monero . Investment Marketplace</title>
     
     <!-- Bootstrap 5.3 + Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -812,6 +812,41 @@
             to { transform: rotate(360deg); }
         }
 
+        /* ===== LIVE COUNTDOWN STYLES ===== */
+        .countdown-timer {
+            font-family: 'Space Grotesk', monospace;
+            font-weight: 600;
+            background: var(--sidebar-hover);
+            padding: 0.2rem 0.5rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        .countdown-urgent {
+            color: var(--accent-danger);
+        }
+
+        .countdown-normal {
+            color: var(--accent-success);
+        }
+
+        .last-payout-info {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            display: block;
+            margin-top: 0.2rem;
+        }
+
+        .next-payout-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-success);
+            padding: 0.2rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
         /* ===== RESPONSIVE ===== */
         @media (max-width: 992px) {
             .main-content {
@@ -863,7 +898,7 @@
             }
 
             .investments-table {
-                min-width: 800px;
+                min-width: 1000px;
             }
 
             .filter-tabs {
@@ -1009,7 +1044,7 @@
         <div class="row align-items-center">
             <div class="col-md-6">
                 <div class="balance-label">Your Available Balance</div>
-                <div class="balance-amount">{{ wallet.balance|floatformat:2 }} <small>KSH</small></div>
+                <div class="balance-amount">{{ wallet.available_balance|floatformat:2 }} <small>KSH</small></div>
                 <div class="balance-actions">
                     <a href="{% url 'XMR:account' %}#deposits-tab" class="btn-balance">
                         <i class="bi bi-plus-circle"></i>
@@ -1027,7 +1062,7 @@
                         <div class="balance-label">Next Payout</div>
                         <div class="fs-3 fw-bold text-primary">{{ next_payout_days|default:"0" }} <small class="fs-6">days</small></div>
                         {% if next_payout %}
-                        <small class="text-muted">{{ next_payout.token.name }}</small>
+                        <small class="text-muted">{{ next_payout.token.name }} - {{ next_payout.daily_return|floatformat:0 }} KSH/day</small>
                         {% endif %}
                     </div>
                     <div class="col-6">
@@ -1133,15 +1168,15 @@
                             <i class="bi bi-exclamation-circle"></i> Insufficient
                         </button>
                     {% elif token.max_purchases_per_user %}
-                        {# SIMPLE APPROACH: Just show Invest Now button, let the backend handle max purchase validation #}
-                        <form method="POST" action="{% url 'XMR:buy_investment' token.id %}" onsubmit="return confirmInvestment('{{ token.name }}', '{{ token.minimum_investment }}', '{{ token.daily_return }}', '{{ token.return_days }}')">
+                        {# Check if user has reached max purchases - using a custom template tag would be better, but for now we'll handle in JS #}
+                        <form method="POST" action="{% url 'XMR:buy_investment' token.id %}" onsubmit="return confirmInvestment('{{ token.name }}', '{{ token.minimum_investment }}', '{{ token.daily_return }}', '{{ token.return_days }}')" class="d-inline">
                             {% csrf_token %}
-                            <button type="submit" class="btn-invest">
+                            <button type="submit" class="btn-invest" data-token-id="{{ token.id }}" data-max-purchases="{{ token.max_purchases_per_user }}">
                                 <i class="bi bi-lightning-charge"></i> Invest Now
                             </button>
                         </form>
                     {% else %}
-                        <form method="POST" action="{% url 'XMR:buy_investment' token.id %}" onsubmit="return confirmInvestment('{{ token.name }}', '{{ token.minimum_investment }}', '{{ token.daily_return }}', '{{ token.return_days }}')">
+                        <form method="POST" action="{% url 'XMR:buy_investment' token.id %}" onsubmit="return confirmInvestment('{{ token.name }}', '{{ token.minimum_investment }}', '{{ token.daily_return }}', '{{ token.return_days }}')" class="d-inline">
                             {% csrf_token %}
                             <button type="submit" class="btn-invest">
                                 <i class="bi bi-lightning-charge"></i> Invest Now
@@ -1168,12 +1203,15 @@
         {% endfor %}
     </div>
 
-    <!-- ========== ACTIVE INVESTMENTS SECTION ========== -->
+    <!-- ========== ACTIVE INVESTMENTS SECTION - DATABASE DRIVEN WITH DATES ========== -->
     <div class="investments-section" data-aos="fade-up">
         <div class="section-header">
             <h3>
                 <i class="bi bi-play-circle-fill"></i>
                 Active Investments
+                <span class="next-payout-badge" id="autoPayoutIndicator">
+                    <i class="bi bi-clock-history"></i> Auto-updates every 24h
+                </span>
             </h3>
             <span class="section-badge">{{ active_investments|length }} Active</span>
         </div>
@@ -1187,14 +1225,17 @@
                         <th>Daily Return</th>
                         <th>Progress</th>
                         <th>Received</th>
-                        <th>Days Left</th>
+                        <th>Start Date</th>
                         <th>End Date</th>
+                        <th>Days Left</th>
+                        <th>Last Payout</th>
+                        <th>Next Payout In</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for investment in active_investments %}
-                    <tr>
+                    <tr id="investment-{{ investment.id }}" class="investment-row" data-investment-id="{{ investment.id }}" data-remaining="{{ investment.remaining_payouts }}" data-last-payout="{% if investment.last_payout_date %}{{ investment.last_payout_date|date:'U' }}{% endif %}" data-created="{{ investment.created_at|date:'U' }}">
                         <td>
                             <strong>{{ investment.token.name }}</strong>
                             <br>
@@ -1211,8 +1252,31 @@
                             </div>
                         </td>
                         <td class="amount-positive">{{ investment.total_paid|floatformat:2 }} KSH</td>
-                        <td><span class="badge bg-primary">{{ investment.remaining_payouts }}</span></td>
-                        <td>{{ investment.end_date|date:"M d, Y" }}</td>
+                        <td>{{ investment.start_date|date:"M d, Y H:i" }}</td>
+                        <td>{{ investment.end_date|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <span class="badge {% if investment.remaining_payouts < 3 %}bg-warning{% else %}bg-primary{% endif %}">
+                                {{ investment.remaining_payouts }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if investment.last_payout_date %}
+                                {{ investment.last_payout_date|date:"M d, H:i" }}
+                                <small class="last-payout-info">{{ investment.last_payout_date|timesince }} ago</small>
+                            {% else %}
+                                <span class="text-muted">Not yet</span>
+                                <small class="last-payout-info">First payout in ~24h</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="countdown-timer {% if investment.remaining_payouts < 3 %}countdown-urgent{% else %}countdown-normal{% endif %}" 
+                                  data-end="{{ investment.end_date|date:'U' }}"
+                                  data-last-payout="{% if investment.last_payout_date %}{{ investment.last_payout_date|date:'U' }}{% endif %}"
+                                  data-created="{{ investment.created_at|date:'U' }}"
+                                  data-id="{{ investment.id }}">
+                                Calculating...
+                            </span>
+                        </td>
                         <td>
                             <span class="badge-status active">
                                 <i class="bi bi-check-circle-fill"></i> ACTIVE
@@ -1221,7 +1285,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="empty-state">
+                        <td colspan="11" class="empty-state">
                             <i class="bi bi-play-circle"></i>
                             <h5>No Active Investments</h5>
                             <p class="text-muted">Start investing in tokens above to grow your wealth</p>
@@ -1236,7 +1300,7 @@
         </div>
     </div>
 
-    <!-- ========== COMPLETED INVESTMENTS SECTION ========== -->
+    <!-- ========== COMPLETED INVESTMENTS SECTION - DATABASE DRIVEN WITH DATES ========== -->
     <div class="investments-section" data-aos="fade-up">
         <div class="section-header">
             <h3>
@@ -1256,6 +1320,8 @@
                         <th>Profit</th>
                         <th>Start Date</th>
                         <th>End Date</th>
+                        <th>Completed On</th>
+                        <th>Duration</th>
                         <th>Status</th>
                         <th>ROI</th>
                     </tr>
@@ -1273,8 +1339,10 @@
                         <td class="text-success">
                             {{ investment.total_paid|add:investment.amount|floatformat:2 }} KSH
                         </td>
-                        <td>{{ investment.start_date|date:"M d, Y" }}</td>
-                        <td>{{ investment.end_date|date:"M d, Y" }}</td>
+                        <td>{{ investment.start_date|date:"M d, Y H:i" }}</td>
+                        <td>{{ investment.end_date|date:"M d, Y H:i" }}</td>
+                        <td>{{ investment.updated_at|date:"M d, Y H:i" }}</td>
+                        <td>{{ investment.start_date|timesince:investment.end_date }}</td>
                         <td>
                             <span class="badge-status completed">
                                 <i class="bi bi-check-circle"></i> COMPLETED
@@ -1282,14 +1350,13 @@
                         </td>
                         <td>
                             <span class="badge bg-success text-white">
-                                {% widthratio investment.total_paid investment.amount 100 as roi %}
-                                {{ roi|add:"-100" }}%
+                                {{ investment.get_progress_percentage|floatformat:1 }}%
                             </span>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="empty-state">
+                        <td colspan="10" class="empty-state">
                             <i class="bi bi-clock-history"></i>
                             <h5>No Completed Investments</h5>
                             <p class="text-muted">Your completed investments will appear here</p>
@@ -1412,14 +1479,79 @@
         toast.addEventListener('hidden.bs.toast', () => toast.remove());
     }
 
-    // Show messages
+    // ========== LIVE COUNTDOWN TIMER ==========
+    function updateAllCountdowns() {
+        const now = Math.floor(Date.now() / 1000); // Current time in seconds
+        
+        document.querySelectorAll('.countdown-timer').forEach(timer => {
+            const endDate = parseInt(timer.dataset.end);
+            const lastPayout = timer.dataset.lastPayout ? parseInt(timer.dataset.lastPayout) : null;
+            const created = parseInt(timer.dataset.created);
+            const investmentId = timer.dataset.id;
+            
+            let nextPayoutTime;
+            
+            if (!lastPayout || isNaN(lastPayout)) {
+                // No payouts yet - first payout is 24 hours after creation
+                nextPayoutTime = created + (24 * 3600);
+            } else {
+                // Subsequent payouts - 24 hours after last payout
+                nextPayoutTime = lastPayout + (24 * 3600);
+            }
+            
+            // Calculate seconds until next payout
+            const secondsUntil = nextPayoutTime - now;
+            
+            if (secondsUntil <= 0) {
+                // Payout should have happened - show "Processing"
+                timer.innerHTML = '<span class="text-warning"><i class="bi bi-hourglass-split"></i> Processing...</span>';
+            } else {
+                // Calculate hours, minutes, seconds
+                const hours = Math.floor(secondsUntil / 3600);
+                const minutes = Math.floor((secondsUntil % 3600) / 60);
+                const seconds = secondsUntil % 60;
+                
+                // Format the time
+                let timeString;
+                if (hours > 24) {
+                    const days = Math.floor(hours / 24);
+                    timeString = `${days}d ${hours % 24}h`;
+                } else if (hours > 0) {
+                    timeString = `${hours}h ${minutes}m`;
+                } else {
+                    timeString = `${minutes}m ${seconds}s`;
+                }
+                
+                timer.innerHTML = timeString;
+            }
+        });
+    }
+
+    // Update countdown every second
+    setInterval(updateAllCountdowns, 1000);
+    
+    // Initial update
+    setTimeout(updateAllCountdowns, 100);
+
+    // ========== MAX PURCHASE VALIDATION ==========
     document.addEventListener('DOMContentLoaded', function() {
+        // Get user token purchases from data attribute or API
+        // For now, we'll rely on server-side validation
+        
         {% if messages %}
             {% for message in messages %}
                 showToast('{{ message|escapejs }}', '{{ message.tags }}');
             {% endfor %}
         {% endif %}
     });
+
+    // ========== FORMAT CURRENCY HELPER ==========
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('en-KE', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    }
 
     // Smooth scroll to tokens
     document.querySelectorAll('a[href="#tokensGrid"]').forEach(anchor => {

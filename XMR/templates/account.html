@@ -21,6 +21,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     
     <style>
+        /* ALL YOUR EXISTING STYLES REMAIN EXACTLY THE SAME */
+        /* ... (keeping all your CSS from the original) ... */
+        
+
         /* Previous styles remain exactly the same - keeping them for brevity */
         * {
             margin: 0;
@@ -1587,6 +1591,27 @@
                 width: 90vw;
             }
         }
+        /* Just adding one small fix for the verification badge */
+        .verification-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .verification-badge.verified {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-success);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+        
+        /* Keep all your existing styles from the original... */
     </style>
 </head>
 <body>
@@ -1607,7 +1632,7 @@
 <!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- ========== FLOATING BUTTONS - ADD THIS SECTION ========== -->
+<!-- ========== FLOATING BUTTONS ========== -->
 <div class="floating-buttons">
     <!-- WhatsApp Button -->
     <a href="https://wa.me/254729383065?text=Hello%20Monero%20Support%2C%20I%20need%20assistance%20with%20my%20account" 
@@ -1786,17 +1811,17 @@
                 </div>
             </div>
 
-            <!-- Stats Cards -->
+            <!-- Stats Cards - FIXED: Using correct wallet fields -->
             <div class="stats-grid">
                 <div class="stat-card" data-aos="fade-up" data-aos-delay="100">
                     <div class="stat-icon">
                         <i class="bi bi-wallet2"></i>
                     </div>
                     <div class="stat-label">Available Balance</div>
-                    <div class="stat-value">{{ wallet.balance|floatformat:2 }} <small>KSH</small></div>
+                    <div class="stat-value">{{ wallet.available_balance|floatformat:2 }} <small>KSH</small></div>
                     <div class="stat-footer">
                         <span class="stat-trend positive">
-                            <i class="bi bi-arrow-up"></i> +{{ total_earned|floatformat:2 }}
+                            <i class="bi bi-arrow-up"></i> Total: {{ wallet.balance|floatformat:2 }}
                         </span>
                     </div>
                 </div>
@@ -1822,7 +1847,7 @@
                     <div class="stat-value">{{ total_invested|floatformat:2 }} <small>KSH</small></div>
                     <div class="stat-footer">
                         <span class="stat-trend positive">
-                            <i class="bi bi-calendar-check"></i> {{ days_left }} days left
+                            <i class="bi bi-calendar-check"></i> {% if next_payout %}{{ days_left }} days left{% else %}No active{% endif %}
                         </span>
                     </div>
                 </div>
@@ -1831,11 +1856,11 @@
                     <div class="stat-icon">
                         <i class="bi bi-trophy"></i>
                     </div>
-                    <div class="stat-label">Referral Earnings</div>
-                    <div class="stat-value">{{ total_referral_earnings|floatformat:2 }} <small>KSH</small></div>
+                    <div class="stat-label">Total Earned</div>
+                    <div class="stat-value">{{ total_earned|floatformat:2 }} <small>KSH</small></div>
                     <div class="stat-footer">
                         <span class="stat-trend">
-                            <i class="bi bi-people"></i> {{ total_referrals }} referrals
+                            <i class="bi bi-people"></i> {% if next_payout %}Next: {{ next_payout.daily_return|floatformat:0 }} KSH{% endif %}
                         </span>
                     </div>
                 </div>
@@ -1927,7 +1952,7 @@
                 </ul>
 
                 <div class="tab-content">
-                    <!-- Overview Tab -->
+                    <!-- Overview Tab - FIXED: Using correct field names -->
                     <div class="tab-pane active" id="dashboard" role="tabpanel">
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -1951,18 +1976,19 @@
                                                         {% elif transaction.transaction_type == 'WITHDRAWAL' %}processing
                                                         {% elif transaction.transaction_type == 'PROFIT' %}success
                                                         {% endif %}">
-                                                        {{ transaction.get_transaction_type_display|truncatechars:8 }}
+                                                        {{ transaction.get_transaction_type_display }}
                                                     </span>
                                                 </td>
                                                 <td class="amount 
                                                     {% if transaction.transaction_type == 'WITHDRAWAL' %}amount-negative
                                                     {% else %}amount-positive{% endif %}">
-                                                    {{ transaction.amount|floatformat:0 }}
+                                                    {% if transaction.transaction_type == 'WITHDRAWAL' %}-{% else %}+{% endif %}
+                                                    {{ transaction.amount|floatformat:2 }}
                                                 </td>
-                                                <td>{{ transaction.created_at|date:"M d" }}</td>
+                                                <td>{{ transaction.created_at|date:"M d, H:i" }}</td>
                                                 <td>
                                                     <span class="badge-status {% if transaction.status == 'COMPLETED' %}verified{% else %}pending{% endif %}">
-                                                        {{ transaction.status|truncatechars:5 }}
+                                                        {{ transaction.status }}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -1993,9 +2019,9 @@
                                         <tbody>
                                             {% for investment in active_investments|slice:":5" %}
                                             <tr>
-                                                <td><strong>{{ investment.token.name }}</strong></td>
-                                                <td class="amount">{{ investment.amount|floatformat:0 }}</td>
-                                                <td>
+                                                <td><strong>{{ investment.token.name }}</strong><br><small>{{ investment.token.display_name }}</small></td>
+                                                <td class="amount">{{ investment.amount|floatformat:2 }}</td>
+                                                <td style="min-width: 120px;">
                                                     <div class="d-flex align-items-center gap-2">
                                                         <div class="progress flex-grow-1">
                                                             <div class="progress-bar" style="width: {{ investment.get_progress_percentage }}%"></div>
@@ -2003,7 +2029,7 @@
                                                         <small>{{ investment.get_progress_percentage|floatformat:0 }}%</small>
                                                     </div>
                                                 </td>
-                                                <td class="amount-positive">+{{ investment.total_paid|floatformat:0 }}</td>
+                                                <td class="amount-positive">+{{ investment.total_paid|floatformat:2 }}</td>
                                             </tr>
                                             {% empty %}
                                             <tr>
@@ -2020,7 +2046,7 @@
                         </div>
                     </div>
 
-                    <!-- Profile Tab -->
+                    <!-- Profile Tab - FIXED: Form actions and field names -->
                     <div class="tab-pane" id="profile" role="tabpanel">
                         <div class="profile-section">
                             <div class="profile-header">
@@ -2051,7 +2077,7 @@
                                 </div>
                             </div>
 
-                            <!-- Profile Update Form -->
+                            <!-- Profile Update Form - FIXED: Uses correct fields from context -->
                             <form method="POST" action="{% url 'XMR:account' %}" class="row g-4">
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="update_profile">
@@ -2093,7 +2119,7 @@
                                 </div>
                             </form>
 
-                            <!-- Password Change Form -->
+                            <!-- Password Change Form - FIXED: Uses correct action -->
                             <hr class="my-5">
                             <h5 class="mb-4">Change Password</h5>
                             <form method="POST" action="{% url 'XMR:account' %}">
@@ -2128,7 +2154,7 @@
                                 </div>
                             </form>
 
-                            <!-- KYC Upload Form -->
+                            <!-- KYC Upload Form - FIXED: Uses correct action -->
                             <hr class="my-5">
                             <h5 class="mb-4">KYC Verification Documents</h5>
                             <form method="POST" action="{% url 'XMR:account' %}" enctype="multipart/form-data">
@@ -2165,7 +2191,7 @@
                         </div>
                     </div>
 
-                    <!-- Deposits Tab - COMPLETE with all deposit features -->
+                    <!-- Deposits Tab - FIXED: Using correct field names from MpesaPayment model -->
                     <div class="tab-pane" id="deposits" role="tabpanel">
                         <div class="table-container">
                             <div class="table-header">
@@ -2237,7 +2263,7 @@
                         </div>
                     </div>
 
-                    <!-- Withdrawals Tab -->
+                    <!-- Withdrawals Tab - FIXED: Using correct field names from WithdrawalRequest model -->
                     <div class="tab-pane" id="withdrawals" role="tabpanel">
                         <div class="table-container">
                             <div class="table-header">
@@ -2273,7 +2299,7 @@
                                     <tr>
                                         <td><code>{{ withdrawal.request_id|truncatechars:8 }}</code></td>
                                         <td class="amount">{{ withdrawal.amount|floatformat:2 }} KSH</td>
-                                        <td>{{ withdrawal.net_amount|floatformat:2 }} KSH</td>
+                                        <td class="amount-positive">{{ withdrawal.net_amount|floatformat:2 }} KSH</td>
                                         <td>{{ withdrawal.payment_method }}</td>
                                         <td>{{ withdrawal.created_at|date:"M d, Y H:i" }}</td>
                                         <td>
@@ -2289,7 +2315,7 @@
                                         <td>
                                             {% if withdrawal.status == 'PENDING' %}
                                             <a href="{% url 'XMR:cancel_withdrawal' withdrawal.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this withdrawal request?')">
-                                                <i class="bi bi-x-lg"></i>
+                                                <i class="bi bi-x-lg"></i> Cancel
                                             </a>
                                             {% endif %}
                                         </td>
@@ -2308,7 +2334,7 @@
                         </div>
                     </div>
 
-                    <!-- Transactions Tab -->
+                    <!-- Transactions Tab - FIXED: Using correct field names -->
                     <div class="tab-pane" id="transactions" role="tabpanel">
                         <div class="table-container">
                             <div class="table-header">
@@ -2381,7 +2407,7 @@
                         </div>
                     </div>
 
-                    <!-- Investments Tab -->
+                    <!-- Investments Tab - FIXED: Shows both active and completed -->
                     <div class="tab-pane" id="investments" role="tabpanel">
                         <div class="table-container">
                             <div class="table-header">
@@ -2391,7 +2417,9 @@
                                 </a>
                             </div>
                             
-                            <table class="modern-table">
+                            <!-- Active Investments -->
+                            <h6 class="mb-3 mt-3">Active Investments</h6>
+                            <table class="modern-table mb-4">
                                 <thead>
                                     <tr>
                                         <th>Token</th>
@@ -2399,8 +2427,9 @@
                                         <th>Daily Return</th>
                                         <th>Progress</th>
                                         <th>Total Paid</th>
-                                        <th>Status</th>
+                                        <th>Start Date</th>
                                         <th>End Date</th>
+                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -2408,7 +2437,7 @@
                                     <tr>
                                         <td><strong>{{ investment.token.name }}</strong><br><small>{{ investment.token.display_name }}</small></td>
                                         <td class="amount">{{ investment.amount|floatformat:2 }} KSH</td>
-                                        <td>{{ investment.daily_return|floatformat:2 }} KSH</td>
+                                        <td class="text-success">{{ investment.daily_return|floatformat:2 }} KSH</td>
                                         <td style="min-width: 150px;">
                                             <div class="d-flex align-items-center gap-2">
                                                 <div class="progress flex-grow-1">
@@ -2418,44 +2447,76 @@
                                             </div>
                                         </td>
                                         <td class="amount-positive">{{ investment.total_paid|floatformat:2 }} KSH</td>
+                                        <td>{{ investment.start_date|date:"M d, Y" }}</td>
+                                        <td>{{ investment.end_date|date:"M d, Y" }}</td>
                                         <td>
                                             <span class="badge-status verified">
                                                 {{ investment.status }}
                                             </span>
                                         </td>
-                                        <td>{{ investment.end_date|date:"M d, Y" }}</td>
                                     </tr>
                                     {% empty %}
                                     <tr>
-                                        <td colspan="7" class="empty-state">
+                                        <td colspan="8" class="empty-state">
                                             <i class="bi bi-graph-up"></i>
-                                            <h5>No Active Investments</h5>
-                                            <p class="text-muted">Start investing in tokens to grow your wealth</p>
-                                            <a href="{% url 'XMR:investments' %}" class="btn-primary mt-3">
-                                                <i class="bi bi-coin"></i> View Tokens
-                                            </a>
+                                            <p>No active investments</p>
                                         </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
+
+                            <!-- Completed Investments -->
+                            {% if completed_investments %}
+                            <h6 class="mb-3">Completed Investments</h6>
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Token</th>
+                                        <th>Amount</th>
+                                        <th>Total Return</th>
+                                        <th>Profit</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for investment in completed_investments %}
+                                    <tr>
+                                        <td><strong>{{ investment.token.name }}</strong><br><small>{{ investment.token.display_name }}</small></td>
+                                        <td class="amount">{{ investment.amount|floatformat:2 }} KSH</td>
+                                        <td class="amount-positive">{{ investment.total_paid|floatformat:2 }} KSH</td>
+                                        <td class="text-success">{{ investment.total_paid|add:investment.amount|floatformat:2 }} KSH</td>
+                                        <td>{{ investment.start_date|date:"M d, Y" }}</td>
+                                        <td>{{ investment.end_date|date:"M d, Y" }}</td>
+                                        <td>
+                                            <span class="badge-status completed">
+                                                {{ investment.status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% endif %}
                         </div>
                     </div>
 
-                    <!-- Referrals Tab -->
+                    <!-- Referrals Tab - FIXED: Uses referral_data from context -->
                     <div class="tab-pane" id="referrals" role="tabpanel">
                         <div class="table-container">
                             <div class="row g-3 mb-4">
-                                <div class="col-4">
+                                <div class="col-md-4">
                                     <div class="stat-card">
                                         <div class="stat-icon">
                                             <i class="bi bi-people"></i>
                                         </div>
-                                        <div class="stat-label">Total</div>
+                                        <div class="stat-label">Total Referrals</div>
                                         <div class="stat-value">{{ total_referrals }}</div>
                                     </div>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-md-4">
                                     <div class="stat-card">
                                         <div class="stat-icon">
                                             <i class="bi bi-trophy"></i>
@@ -2464,13 +2525,13 @@
                                         <div class="stat-value">{{ active_referrals }}</div>
                                     </div>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-md-4">
                                     <div class="stat-card">
                                         <div class="stat-icon">
                                             <i class="bi bi-cash-stack"></i>
                                         </div>
                                         <div class="stat-label">Earned</div>
-                                        <div class="stat-value">{{ total_referral_earnings|floatformat:0 }} KSH</div>
+                                        <div class="stat-value">{{ total_referral_earnings|floatformat:2 }} KSH</div>
                                     </div>
                                 </div>
                             </div>
@@ -2481,7 +2542,7 @@
                                     <input type="text" class="form-control" id="referralLink" 
                                            value="{{ request.build_absolute_uri|slice:':-8' }}/signup/?ref={{ profile.referral_code }}" readonly>
                                     <button class="btn-primary" onclick="copyReferralLink()">
-                                        <i class="bi bi-clipboard"></i>
+                                        <i class="bi bi-clipboard"></i> Copy
                                     </button>
                                 </div>
                                 <small class="text-muted mt-2 d-block">Share this link with friends. You earn 5% commission on their first deposit!</small>
@@ -2493,7 +2554,7 @@
                                         <th>Username</th>
                                         <th>Joined</th>
                                         <th>First Deposit</th>
-                                        <th>Bonus</th>
+                                        <th>Bonus Earned</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
@@ -2502,8 +2563,8 @@
                                     <tr>
                                         <td>{{ referral.user.username }}</td>
                                         <td>{{ referral.created_at|date:"M d, Y" }}</td>
-                                        <td class="amount">{{ referral.first_deposit|floatformat:0 }} KSH</td>
-                                        <td class="amount-positive">{{ referral.bonus_earned|floatformat:0 }} KSH</td>
+                                        <td class="amount">{{ referral.first_deposit|floatformat:2 }} KSH</td>
+                                        <td class="amount-positive">{{ referral.bonus_earned|floatformat:2 }} KSH</td>
                                         <td>
                                             <span class="badge-status {% if referral.is_active %}verified{% else %}pending{% endif %}">
                                                 {% if referral.is_active %}Active{% else %}Inactive{% endif %}
@@ -2529,7 +2590,7 @@
     </main>
 </div>
 
-<!-- ========== DEPOSIT MODAL - COMPLETE with all features ========== -->
+<!-- ========== DEPOSIT MODAL - FIXED: Using correct SystemConfig values ========== -->
 <div class="modal fade" id="depositModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -2543,9 +2604,9 @@
                     <h6><i class="bi bi-info-circle me-2"></i>M-Pesa Payment Instructions</h6>
                     <p>1. Go to M-Pesa on your phone</p>
                     <p>2. Select <strong>Send Money</strong></p>                                       
-                    <p>3. Enter Account No: <strong class="text-primary">0729383065</strong></p>
-                    <p>4. Enter Amount and complete payment</p>
-                    <p>5. Account name: Andrew Manywe</p>
+                    <p>3. Enter Business No: <strong class="text-primary">{{ paybill }}</strong></p>
+                    <p>4. Enter Account No: <strong class="text-primary">{{ account_no }}</strong></p>
+                    <p>5. Enter Amount and complete payment</p>
                     <p class="mt-2 mb-0 text-warning"><i class="bi bi-exclamation-triangle"></i> Minimum deposit: <strong>{{ min_deposit }} KSH</strong></p>
                 </div>
                 
@@ -2591,7 +2652,7 @@
     </div>
 </div>
 
-<!-- Withdraw Modal -->
+<!-- Withdraw Modal - FIXED: Using correct wallet fields -->
 <div class="modal fade" id="withdrawModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -2603,7 +2664,7 @@
                 <div class="alert alert-info d-flex align-items-center gap-2">
                     <i class="bi bi-info-circle fs-4"></i>
                     <div>
-                        <strong>Available Balance:</strong> {{ wallet.balance|floatformat:2 }} KSH<br>
+                        <strong>Available Balance:</strong> {{ wallet.available_balance|floatformat:2 }} KSH<br>
                         <small>Tax: 5% will be deducted from withdrawal amount</small>
                     </div>
                 </div>
@@ -2613,7 +2674,7 @@
                     
                     <div class="form-group">
                         <label class="form-label">Amount (KSH) <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" name="amount" min="{{ min_withdrawal }}" max="{{ wallet.balance }}" step="0.01" required id="withdrawAmount">
+                        <input type="number" class="form-control" name="amount" min="{{ min_withdrawal }}" max="{{ wallet.available_balance }}" step="0.01" required id="withdrawAmount">
                         <small class="text-muted">Minimum: {{ min_withdrawal }} KSH | You'll receive: <span id="netAmount">0.00</span> KSH after 5% tax</small>
                     </div>
                     
@@ -2716,7 +2777,9 @@
             document.querySelectorAll('.sidebar-link').forEach(link => {
                 link.classList.remove('active');
             });
-            event.currentTarget.classList.add('active');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
         }
         
         // Close mobile menu after selection
@@ -2736,7 +2799,7 @@
             mpesaField.style.display = 'block';
             bankField.style.display = 'none';
             mpesaField.querySelector('input').required = true;
-            bankField.querySelector('textarea').required = false;
+            if (bankField.querySelector('textarea')) bankField.querySelector('textarea').required = false;
         } else {
             mpesaField.style.display = 'none';
             bankField.style.display = 'block';
@@ -2804,7 +2867,7 @@
                 row.style.display = '';
                 return;
             }
-            const statusCell = row.querySelector('.badge-status');
+            const statusCell = row.querySelector('.badge-status:last-child');
             if (statusCell && statusCell.textContent.includes(filterValue)) {
                 row.style.display = '';
             } else {
@@ -2817,9 +2880,19 @@
     document.addEventListener('DOMContentLoaded', function() {
         {% if messages %}
             {% for message in messages %}
-                showToast('{{ message }}', '{{ message.tags }}');
+                showToast('{{ message|escapejs }}', '{{ message.tags }}');
             {% endfor %}
         {% endif %}
+        
+        // Check URL hash for tab
+        if (window.location.hash) {
+            const hash = window.location.hash.substring(1);
+            const tab = document.getElementById(hash + '-tab');
+            if (tab) {
+                const tabInstance = new bootstrap.Tab(tab);
+                tabInstance.show();
+            }
+        }
     });
 
     // Handle window resize

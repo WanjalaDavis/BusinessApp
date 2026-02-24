@@ -50,15 +50,16 @@ urlpatterns = [
     path('admin-panel/', views.myadmin, name='myadmin'),
     path('custom-admin/api/', views.admin_api, name='admin_api'),
     
+    path('manage/fix-wallets/', views.fix_all_wallets, name='fix_wallets'),
     # ==================== ADMIN PAYOUT MANAGEMENT ====================
     # These URLs are kept for manual admin triggers (now without Celery)
-    path('admin/trigger-payout/', views.admin_trigger_payout, name='admin_trigger_payout'),
-    path('admin/check-expired/', views.admin_check_expired, name='admin_check_expired'),
-    path('admin/payout-stats/', views.admin_payout_stats, name='admin_payout_stats'),
+    path('sema/trigger-payout/', views.admin_trigger_payout, name='admin_trigger_payout'),
+    path('tena/check-expired/', views.admin_check_expired, name='admin_check_expired'),
+    path('mana/payout-stats/', views.admin_payout_stats, name='admin_payout_stats'),
     
     # ========== NEW: ADMIN CATCH-UP PAYOUT ROUTES ==========
-    path('admin/catch-up-payouts/', views.admin_catch_up_payouts, name='admin_catch_up_payouts'),
-    path('admin/fix-investment/<int:investment_id>/', views.fix_investment_payouts, name='fix_investment_payouts'),
+    path('niaje/catch-up-payouts/', views.admin_catch_up_payouts, name='admin_catch_up_payouts'),
+    path('twende/fix-investment/<int:investment_id>/', views.fix_investment_payouts, name='fix_investment_payouts'),
     
     # ==================== API ROUTES ====================
     path('api/wallet/balance/', views.api_wallet_balance, name='api_wallet_balance'),

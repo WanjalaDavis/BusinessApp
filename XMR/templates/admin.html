@@ -47,6 +47,7 @@
             --warning-bg: rgba(245, 158, 11, 0.1);
             --danger-bg: rgba(239, 68, 68, 0.1);
             --info-bg: rgba(59, 130, 246, 0.1);
+            --payout-bg: rgba(139, 92, 246, 0.1);
         }
 
         :root[data-bs-theme="dark"] {
@@ -63,6 +64,7 @@
             --warning-bg: rgba(245, 158, 11, 0.2);
             --danger-bg: rgba(239, 68, 68, 0.2);
             --info-bg: rgba(59, 130, 246, 0.2);
+            --payout-bg: rgba(139, 92, 246, 0.2);
         }
 
         /* ===== TOP NAVBAR ===== */
@@ -266,6 +268,7 @@
         .stat-icon.deposits { background: linear-gradient(135deg, #f59e0b, #f97316); }
         .stat-icon.invested { background: linear-gradient(135deg, #10b981, #14b8a6); }
         .stat-icon.withdrawals { background: linear-gradient(135deg, #ef4444, #f97316); }
+        .stat-icon.payouts { background: linear-gradient(135deg, #8b5cf6, #d946ef); }
         .stat-icon i { color: white; }
 
         .stat-content {
@@ -461,6 +464,7 @@
         .btn-icon.danger:hover { background: #ef4444; }
         .btn-icon.warning:hover { background: #f59e0b; }
         .btn-icon.info:hover { background: #3b82f6; }
+        .btn-icon.payout:hover { background: #8b5cf6; }
 
         /* Table Styles */
         .modern-table {
@@ -543,6 +547,11 @@
             color: #3b82f6;
         }
 
+        .status-badge.payout {
+            background: var(--payout-bg);
+            color: #8b5cf6;
+        }
+
         /* User Cell */
         .user-cell {
             display: flex;
@@ -578,10 +587,15 @@
             color: #ef4444;
         }
 
+        .amount-payout {
+            color: #8b5cf6;
+        }
+
         /* Action Buttons Group */
         .action-buttons {
             display: flex;
             gap: 0.35rem;
+            flex-wrap: wrap;
         }
 
         /* KYC Grid */
@@ -714,6 +728,42 @@
             border-color: #f15a24;
         }
 
+        /* Payout Summary Card */
+        .payout-summary {
+            background: linear-gradient(135deg, #8b5cf6, #d946ef);
+            border-radius: 20px;
+            padding: 1.5rem;
+            color: white;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .payout-summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .payout-stat {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .payout-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .payout-stat-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
         /* Responsive */
         @media (max-width: 1200px) {
             .admin-sidebar {
@@ -799,6 +849,10 @@
             
             .modern-table {
                 min-width: 800px;
+            }
+            
+            .payout-summary-stats {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -981,6 +1035,12 @@
                 </a>
             </div>
             <div class="nav-item-sidebar">
+                <a class="nav-link-sidebar {% if active_tab == 'payouts' %}active{% endif %}" href="#" onclick="switchTab('payouts'); return false;">
+                    <i class="bi bi-cash-stack"></i>
+                    <span class="nav-text">Payouts</span>
+                </a>
+            </div>
+            <div class="nav-item-sidebar">
                 <a class="nav-link-sidebar {% if active_tab == 'users' %}active{% endif %}" href="#" onclick="switchTab('users'); return false;">
                     <i class="bi bi-people"></i>
                     <span class="nav-text">Users</span>
@@ -1018,6 +1078,12 @@
                 <a class="nav-link-sidebar {% if active_tab == 'settings' %}active{% endif %}" href="#" onclick="switchTab('settings'); return false;">
                     <i class="bi bi-gear"></i>
                     <span class="nav-text">Settings</span>
+                </a>
+            </div>
+            <div class="nav-item-sidebar">
+                <a class="nav-link-sidebar" href="{% url 'XMR:fix_wallets' %}" onclick="return confirm('This will fix all wallet balances. Continue?')">
+                    <i class="bi bi-wrench"></i>
+                    <span class="nav-text">Fix Wallets</span>
                 </a>
             </div>
         </nav>
@@ -1074,6 +1140,17 @@
                         <span class="text-info">{{ dashboard_stats.pending_withdrawals }} pending</span>
                     </div>
                 </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon payouts">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Total Payouts</span>
+                        <div class="stat-value">{{ dashboard_stats.total_profits_paid|floatformat:0 }} <small>KSH</small></div>
+                        <span class="text-payout">{{ dashboard_stats.active_investments }} active investments</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Charts Row -->
@@ -1119,9 +1196,33 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Payout Summary Card -->
+            <div class="payout-summary">
+                <h5 class="mb-3"><i class="bi bi-cash-stack me-2"></i>Payout Summary</h5>
+                <div class="payout-summary-stats">
+                    <div class="payout-stat">
+                        <div class="payout-stat-value" id="dueTodayCount">0</div>
+                        <div class="payout-stat-label">Due Today</div>
+                    </div>
+                    <div class="payout-stat">
+                        <div class="payout-stat-value" id="missedCount">0</div>
+                        <div class="payout-stat-label">Missed</div>
+                    </div>
+                    <div class="payout-stat">
+                        <div class="payout-stat-value" id="processedToday">0</div>
+                        <div class="payout-stat-label">Processed Today</div>
+                    </div>
+                    <div class="payout-stat">
+                        <button class="btn btn-light btn-sm" onclick="catchUpAllPayouts()">
+                            <i class="bi bi-lightning-charge-fill me-2"></i>Run Catch-Up
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Deposits Tab - FIXED -->
+        <!-- Deposits Tab -->
         <div id="deposits" class="tab-pane {% if active_tab == 'deposits' %}active{% endif %}">
             <div class="table-header">
                 <h4>Deposit Management</h4>
@@ -1312,7 +1413,7 @@
             </div>
         </div>
 
-        <!-- Investments Tab - NEW -->
+        <!-- Investments Tab -->
         <div id="investments" class="tab-pane {% if active_tab == 'investments' %}active{% endif %}">
             <div class="table-header">
                 <h4>Investment Management</h4>
@@ -1341,8 +1442,9 @@
                                 <th>Daily Return</th>
                                 <th>Progress</th>
                                 <th>Total Paid</th>
+                                <th>Remaining</th>
                                 <th>Start Date</th>
-                                <th>End Date</th>
+                                <th>Last Payout</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -1370,8 +1472,15 @@
                                         </div>
                                     </td>
                                     <td class="amount-positive">{{ investment.total_paid|floatformat:2 }} KSH</td>
-                                    <td>{{ investment.start_date|date:"Y-m-d" }}</td>
-                                    <td>{{ investment.end_date|date:"Y-m-d" }}</td>
+                                    <td class="amount-payout">{{ investment.remaining_payouts }} days</td>
+                                    <td>{{ investment.start_date }}</td>
+                                    <td>
+                                        {% if investment.last_payout_date %}
+                                            {{ investment.last_payout_date }}
+                                        {% else %}
+                                            <span class="badge bg-warning">Never</span>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         <span class="status-badge 
                                             {% if investment.status == 'ACTIVE' %}verified
@@ -1387,8 +1496,11 @@
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                             {% if investment.status == 'ACTIVE' %}
-                                            <button class="btn-icon warning" onclick="processPayout({{ investment.id }})" title="Process Payout">
+                                            <button class="btn-icon payout" onclick="processPayout({{ investment.id }})" title="Process Payout Now">
                                                 <i class="bi bi-cash"></i>
+                                            </button>
+                                            <button class="btn-icon warning" onclick="checkInvestmentPayouts({{ investment.id }})" title="Check Missed Payouts">
+                                                <i class="bi bi-clock-history"></i>
                                             </button>
                                             {% endif %}
                                         </div>
@@ -1397,10 +1509,151 @@
                                 {% endfor %}
                             {% else %}
                                 <tr>
-                                    <td colspan="11" class="text-center py-4">
+                                    <td colspan="12" class="text-center py-4">
                                         <i class="bi bi-inbox fs-1 d-block mb-3 text-muted"></i>
                                         <h5>No investments found</h5>
                                         <p class="text-muted">Investments will appear here once users start investing.</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if investments_pagination and investments_pagination.total_pages > 1 %}
+<div class="pagination-wrapper">
+    <span class="text-muted">Page {{ investments_pagination.current_page }} of {{ investments_pagination.total_pages }}</span>
+    <nav>
+        <ul class="pagination">
+            {% if investments_pagination.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?investment_page={{ investments_pagination.current_page|add:-1 }}&investment_status={{ current_investment_status }}#investments">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            {# Simple pagination - show current page with prev/next only #}
+            <li class="page-item active">
+                <span class="page-link">{{ investments_pagination.current_page }}</span>
+            </li>
+            
+            {% if investments_pagination.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?investment_page={{ investments_pagination.current_page|add:1 }}&investment_status={{ current_investment_status }}#investments">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+            </div>
+        </div>
+
+        <!-- Payouts Tab -->
+        <div id="payouts" class="tab-pane {% if active_tab == 'payouts' %}active{% endif %}">
+            <div class="table-header">
+                <h4>Payout Management</h4>
+                <div class="filter-group">
+                    <button class="btn-action" onclick="checkAllPayouts()">
+                        <i class="bi bi-clock-history me-2"></i>Check All
+                    </button>
+                    <button class="btn-action" onclick="catchUpAllPayouts()">
+                        <i class="bi bi-lightning-charge-fill me-2"></i>Catch Up All
+                    </button>
+                    <button class="btn-action" onclick="refreshPayoutStats()">
+                        <i class="bi bi-arrow-repeat me-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Payout Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon payouts">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Due Today</span>
+                        <div class="stat-value" id="payoutDueToday">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon payouts">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Missed Payouts</span>
+                        <div class="stat-value" id="payoutMissed">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon payouts">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Processed Today</span>
+                        <div class="stat-value" id="payoutProcessed">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon payouts">
+                        <i class="bi bi-currency-exchange"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Total Payouts</span>
+                        <div class="stat-value">{{ dashboard_stats.total_profits_paid|floatformat:0 }} <small>KSH</small></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payout Queue -->
+            <div class="table-container">
+                <h5 class="mb-3">Pending Payout Queue</h5>
+                <div class="table-responsive">
+                    <table class="modern-table" id="payoutsTable">
+                        <thead>
+                            <tr>
+                                <th>Investment</th>
+                                <th>User</th>
+                                <th>Token</th>
+                                <th>Amount Due</th>
+                                <th>Last Payout</th>
+                                <th>Due Since</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payoutsTableBody">
+                            {% if pending_payouts %}
+                                {% for payout in pending_payouts %}
+                                <tr>
+                                    <td><code>{{ payout.investment_id|truncatechars:8 }}</code></td>
+                                    <td>{{ payout.user }}</td>
+                                    <td>{{ payout.token }}</td>
+                                    <td class="amount-positive">{{ payout.amount }} KSH</td>
+                                    <td>{{ payout.last_payout|default:"Never" }}</td>
+                                    <td>{{ payout.due_since }}</td>
+                                    <td>
+                                        <span class="status-badge {% if payout.status == 'due' %}warning{% else %}pending{% endif %}">
+                                            {{ payout.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn-icon payout" onclick="processPayout({{ payout.id }})" title="Process Now">
+                                            <i class="bi bi-cash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <i class="bi bi-check-circle fs-1 d-block mb-3 text-muted"></i>
+                                        <h5>No pending payouts</h5>
+                                        <p class="text-muted">All investments are up to date.</p>
                                     </td>
                                 </tr>
                             {% endif %}
@@ -1446,6 +1699,7 @@
                                 <th>Phone</th>
                                 <th>Balance</th>
                                 <th>Locked</th>
+                                <th>Available</th>
                                 <th>Verification</th>
                                 <th>Status</th>
                                 <th>Joined</th>
@@ -1470,6 +1724,9 @@
                                     <td>{{ user_data.phone }}</td>
                                     <td class="amount">{{ user_data.balance|floatformat:2 }} KSH</td>
                                     <td>{{ user_data.locked_balance|default:"0.00"|floatformat:2 }} KSH</td>
+                                    <td class="{% if user_data.balance|add:"-"|add:user_data.locked_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {{ user_data.balance|add:"-"|add:user_data.locked_balance|floatformat:2 }} KSH
+                                    </td>
                                     <td>
                                         <div class="d-flex gap-1">
                                             {% if user_data.phone_verified %}
@@ -1515,7 +1772,7 @@
                                 {% endfor %}
                             {% else %}
                                 <tr>
-                                    <td colspan="10" class="text-center py-4">
+                                    <td colspan="11" class="text-center py-4">
                                         <i class="bi bi-inbox fs-1 d-block mb-3 text-muted"></i>
                                         <h5>No users found</h5>
                                         <p class="text-muted">Users will appear here once they register.</p>
@@ -1533,7 +1790,7 @@
                         <ul class="pagination">
                             {% if users_pagination.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?user_page={{ users_pagination.current_page|add:-1 }}#users">
+                                <a class="page-link" href="?user_page={{ users_pagination.current_page|add:-1 }}&user_search={{ request.GET.user_search }}&user_verified={{ request.GET.user_verified }}&user_banned={{ request.GET.user_banned }}#users">
                                     <i class="bi bi-chevron-left"></i>
                                 </a>
                             </li>
@@ -1543,7 +1800,7 @@
                             </li>
                             {% if users_pagination.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?user_page={{ users_pagination.current_page|add:1 }}#users">
+                                <a class="page-link" href="?user_page={{ users_pagination.current_page|add:1 }}&user_search={{ request.GET.user_search }}&user_verified={{ request.GET.user_verified }}&user_banned={{ request.GET.user_banned }}#users">
                                     <i class="bi bi-chevron-right"></i>
                                 </a>
                             </li>
@@ -1701,7 +1958,7 @@
             </div>
         </div>
 
-        <!-- Transactions Tab - NEW -->
+        <!-- Transactions Tab -->
         <div id="transactions" class="tab-pane {% if active_tab == 'transactions' %}active{% endif %}">
             <div class="table-header">
                 <h4>All Transactions</h4>
@@ -1804,6 +2061,33 @@
                         </tbody>
                     </table>
                 </div>
+                
+                {% if transactions_pagination and transactions_pagination.total_pages > 1 %}
+                <div class="pagination-wrapper">
+                    <span class="text-muted">Page {{ transactions_pagination.current_page }} of {{ transactions_pagination.total_pages }}</span>
+                    <nav>
+                        <ul class="pagination">
+                            {% if transactions_pagination.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?transaction_page={{ transactions_pagination.current_page|add:-1 }}&transaction_type={{ request.GET.transaction_type }}&transaction_status={{ request.GET.transaction_status }}#transactions">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ transactions_pagination.current_page }}</span>
+                            </li>
+                            {% if transactions_pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?transaction_page={{ transactions_pagination.current_page|add:1 }}&transaction_type={{ request.GET.transaction_type }}&transaction_status={{ request.GET.transaction_status }}#transactions">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -1878,7 +2162,7 @@
                         <ul class="pagination">
                             {% if logs_pagination.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?log_page={{ logs_pagination.current_page|add:-1 }}#logs">
+                                <a class="page-link" href="?log_page={{ logs_pagination.current_page|add:-1 }}&log_type={{ request.GET.log_type }}#logs">
                                     <i class="bi bi-chevron-left"></i>
                                 </a>
                             </li>
@@ -1888,7 +2172,7 @@
                             </li>
                             {% if logs_pagination.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?log_page={{ logs_pagination.current_page|add:1 }}#logs">
+                                <a class="page-link" href="?log_page={{ logs_pagination.current_page|add:1 }}&log_type={{ request.GET.log_type }}#logs">
                                     <i class="bi bi-chevron-right"></i>
                                 </a>
                             </li>
@@ -2175,25 +2459,6 @@
     </div>
 </div>
 
-<!-- Verification Modal -->
-<div class="modal fade" id="verificationModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">KYC Verification</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="verificationModalContent">
-                Loading...
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success" onclick="verifyKycFromModal()">Verify All</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Image Preview Modal -->
 <div class="modal fade" id="imagePreviewModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -2245,15 +2510,16 @@
     let adjustBalanceModal = null;
     let investmentDetailsModal = null;
     let transactionDetailsModal = null;
-    let verificationModal = null;
     let imagePreviewModal = null;
     let confirmModal = null;
     let currentAction = null;
     let currentItemId = null;
     let currentItemData = null;
 
-    // API URL from Django
-    const API_URL = '{% url "XMR:admin_api" %}';   
+    // API URLs from Django
+    const API_URL = '{% url "XMR:admin_api" %}';
+    const CATCH_UP_URL = '{% url "XMR:admin_catch_up_payouts" %}';
+    const PAYOUT_STATS_URL = '{% url "XMR:admin_payout_stats" %}';
     const CSRF_TOKEN = '{{ csrf_token }}';
 
     // ========== INITIALIZATION ==========
@@ -2264,7 +2530,6 @@
         adjustBalanceModal = new bootstrap.Modal(document.getElementById('adjustBalanceModal'));
         investmentDetailsModal = new bootstrap.Modal(document.getElementById('investmentDetailsModal'));
         transactionDetailsModal = new bootstrap.Modal(document.getElementById('transactionDetailsModal'));
-        verificationModal = new bootstrap.Modal(document.getElementById('verificationModal'));
         imagePreviewModal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
         confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
 
@@ -2276,15 +2541,6 @@
         // Add event listeners
         document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 
-        // Debug: Log data to console
-        console.log('Dashboard Stats:', {{ dashboard_stats|safe }});
-        console.log('Deposits Data Count:', {{ deposits_data|length }});
-        console.log('Withdrawals Data Count:', {{ withdrawals_data|length }});
-        console.log('Users Data Count:', {{ users_data|length }});
-        console.log('Tokens Data Count:', {{ tokens_data|length }});
-        console.log('KYC Data Count:', {{ kyc_pending_data|length }});
-        console.log('Logs Data Count:', {{ logs_data|length }});
-
         // Check if we need to switch to a tab from URL hash
         if (window.location.hash) {
             const tabId = window.location.hash.substring(1);
@@ -2292,6 +2548,12 @@
                 switchTab(tabId);
             }
         }
+        
+        // Load initial payout stats
+        refreshPayoutStats();
+        
+        // Set up periodic refresh
+        setInterval(refreshPayoutStats, 30000);
     });
 
     // ========== THEME TOGGLE ==========
@@ -2309,23 +2571,19 @@
 
     // ========== TAB SWITCHING ==========
     function switchTab(tabId) {
-        // Hide all tabs
         document.querySelectorAll('.tab-pane').forEach(tab => {
             tab.classList.remove('active');
         });
         
-        // Show selected tab
         const selectedTab = document.getElementById(tabId);
         if (selectedTab) {
             selectedTab.classList.add('active');
         }
         
-        // Update sidebar active states
         document.querySelectorAll('.nav-link-sidebar').forEach(link => {
             link.classList.remove('active');
         });
         
-        // Find and activate the corresponding sidebar link
         const activeLink = Array.from(document.querySelectorAll('.nav-link-sidebar')).find(
             link => link.getAttribute('onclick')?.includes(tabId)
         );
@@ -2333,7 +2591,6 @@
             activeLink.classList.add('active');
         }
         
-        // Update URL hash
         window.location.hash = tabId;
         currentTab = tabId;
     }
@@ -2343,7 +2600,6 @@
         const canvas = document.getElementById('depositsChart');
         if (!canvas) return;
         
-        // Get daily deposits data from template
         {% if daily_deposits %}
         const dailyDeposits = JSON.parse('{{ daily_deposits|safe }}');
         {% else %}
@@ -2378,9 +2634,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        display: false
-                    },
+                    legend: { display: false },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
@@ -2432,7 +2686,6 @@
         const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
         bsToast.show();
         
-        // Remove after hidden
         toast.addEventListener('hidden.bs.toast', function() {
             toast.remove();
         });
@@ -2582,12 +2835,10 @@
     // ========== INVESTMENT ACTIONS ==========
     function filterInvestments() {
         const status = document.getElementById('investmentStatusFilter').value;
-        // Implement filtering logic or redirect
         window.location.href = `?investment_status=${status}#investments`;
     }
 
     function viewInvestmentDetails(investmentId) {
-        // Get investment data from the table row
         const row = document.getElementById(`investment-${investmentId}`);
         if (!row) return;
         
@@ -2601,9 +2852,10 @@
             dailyReturn: cells[4].textContent,
             progress: cells[5].querySelector('small').textContent,
             totalPaid: cells[6].textContent,
-            startDate: cells[7].textContent,
-            endDate: cells[8].textContent,
-            status: cells[9].textContent.trim()
+            remaining: cells[7].textContent,
+            startDate: cells[8].textContent,
+            lastPayout: cells[9].textContent,
+            status: cells[10].textContent.trim()
         };
         
         document.getElementById('investmentDetailsContent').innerHTML = `
@@ -2618,24 +2870,118 @@
                 <div class="col-md-6">
                     <p><strong>Progress:</strong> ${investmentData.progress}</p>
                     <p><strong>Total Paid:</strong> ${investmentData.totalPaid}</p>
+                    <p><strong>Remaining Payouts:</strong> ${investmentData.remaining}</p>
                     <p><strong>Start Date:</strong> ${investmentData.startDate}</p>
-                    <p><strong>End Date:</strong> ${investmentData.endDate}</p>
+                    <p><strong>Last Payout:</strong> ${investmentData.lastPayout}</p>
                     <p><strong>Status:</strong> <span class="status-badge ${investmentData.status === 'ACTIVE' ? 'verified' : 'success'}">${investmentData.status}</span></p>
                 </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <button class="btn btn-primary" onclick="processPayout(${investmentId})" style="background: #f15a24; border: none;">
+                    <i class="bi bi-cash me-2"></i>Process Payout Now
+                </button>
+                <button class="btn btn-secondary ms-2" onclick="checkInvestmentPayouts(${investmentId})">
+                    <i class="bi bi-clock-history me-2"></i>Check Missed
+                </button>
             </div>
         `;
         investmentDetailsModal.show();
     }
 
     async function processPayout(investmentId) {
-        // This would be a custom API call to manually process a payout
         const result = await apiCall('process_payout', {
             investment_id: investmentId
         });
         
         if (result.success) {
-            // Refresh or update the row
-            location.reload();
+            showToast('Payout processed successfully', 'success');
+            setTimeout(() => location.reload(), 1500);
+        }
+    }
+
+    async function checkInvestmentPayouts(investmentId) {
+        const result = await apiCall('check_investment_payouts', {
+            investment_id: investmentId
+        });
+        
+        if (result.success) {
+            showToast(`Found ${result.missed} missed payouts. Processing...`, 'info');
+            if (result.missed > 0) {
+                setTimeout(() => location.reload(), 2000);
+            }
+        }
+    }
+
+    // ========== PAYOUT ACTIONS ==========
+    async function checkAllPayouts() {
+        showLoading();
+        try {
+            const response = await fetch(PAYOUT_STATS_URL, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': CSRF_TOKEN,
+                },
+                credentials: 'same-origin'
+            });
+            const result = await response.json();
+            hideLoading();
+            
+            if (result.success) {
+                document.getElementById('dueTodayCount').textContent = result.due_for_payout || 0;
+                document.getElementById('missedCount').textContent = result.missed || 0;
+                document.getElementById('processedToday').textContent = result.payouts_last_24h || 0;
+                
+                if (document.getElementById('payoutDueToday')) {
+                    document.getElementById('payoutDueToday').textContent = result.due_for_payout || 0;
+                    document.getElementById('payoutMissed').textContent = result.missed || 0;
+                    document.getElementById('payoutProcessed').textContent = result.payouts_last_24h || 0;
+                }
+                
+                showToast(`Found ${result.due_for_payout} payouts due today`, 'info');
+            } else {
+                showToast(result.error || 'Error checking payouts', 'error');
+            }
+        } catch (error) {
+            hideLoading();
+            showToast('Error checking payouts: ' + error.message, 'error');
+        }
+    }
+
+    async function catchUpAllPayouts() {
+        document.getElementById('confirmModalTitle').textContent = 'Catch Up All Payouts';
+        document.getElementById('confirmModalMessage').textContent = 'This will process ALL missed payouts for ALL users. This may take a while. Continue?';
+        document.getElementById('confirmModalBtn').className = 'btn btn-warning';
+        document.getElementById('confirmModalBtn').textContent = 'Process All';
+        
+        currentAction = 'catchUpAllPayouts';
+        confirmModal.show();
+    }
+
+    async function refreshPayoutStats() {
+        try {
+            const response = await fetch(PAYOUT_STATS_URL, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': CSRF_TOKEN,
+                },
+                credentials: 'same-origin'
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                document.getElementById('dueTodayCount').textContent = result.due_for_payout || 0;
+                document.getElementById('missedCount').textContent = result.missed || 0;
+                document.getElementById('processedToday').textContent = result.payouts_last_24h || 0;
+                
+                if (document.getElementById('payoutDueToday')) {
+                    document.getElementById('payoutDueToday').textContent = result.due_for_payout || 0;
+                    document.getElementById('payoutMissed').textContent = result.missed || 0;
+                    document.getElementById('payoutProcessed').textContent = result.payouts_last_24h || 0;
+                }
+            }
+        } catch (error) {
+            console.error('Error refreshing payout stats:', error);
         }
     }
 
@@ -2649,7 +2995,6 @@
     }
 
     function viewUserDetails(userId) {
-        // Get user data from the table row
         const row = document.getElementById(`user-${userId}`);
         if (!row) return;
         
@@ -2662,7 +3007,8 @@
             phone: cells[3].textContent,
             balance: cells[4].textContent,
             locked: cells[5].textContent,
-            joined: cells[8].textContent
+            available: cells[6].textContent,
+            joined: cells[9].textContent
         };
         
         document.getElementById('userDetailsContent').innerHTML = `
@@ -2677,6 +3023,7 @@
                 <div class="col-md-6">
                     <p><strong>Balance:</strong> ${userData.balance}</p>
                     <p><strong>Locked Balance:</strong> ${userData.locked}</p>
+                    <p><strong>Available Balance:</strong> ${userData.available}</p>
                     <p><strong>Joined:</strong> ${userData.joined}</p>
                 </div>
             </div>
@@ -2709,10 +3056,20 @@
         
         if (result.success) {
             adjustBalanceModal.hide();
-            // Update user balance in table
             const balanceCell = document.querySelector(`#user-${userId} td:nth-child(5)`);
             if (balanceCell && result.new_balance) {
                 balanceCell.textContent = parseFloat(result.new_balance).toFixed(2) + ' KSH';
+                
+                // Update available balance cell
+                const lockedCell = document.querySelector(`#user-${userId} td:nth-child(6)`);
+                const availableCell = document.querySelector(`#user-${userId} td:nth-child(7)`);
+                if (lockedCell && availableCell) {
+                    const locked = parseFloat(lockedCell.textContent) || 0;
+                    const newBalance = result.new_balance;
+                    const available = newBalance - locked;
+                    availableCell.textContent = available.toFixed(2) + ' KSH';
+                    availableCell.className = available < 0 ? 'text-danger' : 'text-success';
+                }
             }
         }
     }
@@ -2743,7 +3100,6 @@
     }
 
     function editToken(tokenId) {
-        // Fetch token data from the table row
         const tokenRow = document.getElementById(`token-${tokenId}`);
         if (!tokenRow) return;
         
@@ -2794,7 +3150,6 @@
         
         if (result.success) {
             tokenModal.hide();
-            // Reload the page to show updated tokens after a short delay
             setTimeout(() => location.reload(), 1500);
         }
     }
@@ -2836,15 +3191,9 @@
         const reason = prompt('Enter rejection reason:');
         if (!reason) return;
         
-        // Implement KYC rejection API call
-        alert('KYC rejection - Profile ID: ' + profileId + ', Reason: ' + reason);
+        showToast('KYC rejection: ' + reason, 'warning');
         document.getElementById(`kyc-${profileId}`)?.remove();
         updateNotificationCounts();
-    }
-
-    function verifyKycFromModal() {
-        verificationModal.hide();
-        showToast('KYC verification completed', 'success');
     }
 
     // ========== TRANSACTIONS ACTIONS ==========
@@ -2855,9 +3204,39 @@
     }
 
     function viewTransactionDetails(transactionId) {
-        // This would typically fetch transaction details via API
-        // For now, show a simple alert
-        alert('Transaction ID: ' + transactionId);
+        const row = document.querySelector(`#transactionsTableBody tr:has(td:contains('${transactionId}'))`);
+        if (row) {
+            const cells = row.cells;
+            const transactionData = {
+                id: transactionId,
+                transactionId: cells[0].textContent,
+                user: cells[1].querySelector('span').textContent,
+                type: cells[2].textContent.trim(),
+                amount: cells[3].textContent,
+                description: cells[4].textContent,
+                date: cells[5].textContent,
+                status: cells[6].textContent.trim()
+            };
+            
+            document.getElementById('transactionDetailsContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Transaction ID:</strong> ${transactionData.transactionId}</p>
+                        <p><strong>User:</strong> ${transactionData.user}</p>
+                        <p><strong>Type:</strong> ${transactionData.type}</p>
+                        <p><strong>Amount:</strong> ${transactionData.amount}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Description:</strong> ${transactionData.description}</p>
+                        <p><strong>Date:</strong> ${transactionData.date}</p>
+                        <p><strong>Status:</strong> <span class="status-badge ${transactionData.status === 'COMPLETED' ? 'verified' : 'pending'}">${transactionData.status}</span></p>
+                    </div>
+                </div>
+            `;
+            transactionDetailsModal.show();
+        } else {
+            showToast('Transaction details not found', 'error');
+        }
     }
 
     // ========== LOGS ACTIONS ==========
@@ -2898,8 +3277,7 @@
     }
 
     function updateNotificationCounts() {
-        // Update notification counts in UI
-        const deposits = document.querySelectorAll('#depositsTableBody tr').length - 1; // Subtract 1 if there's a "no data" row
+        const deposits = document.querySelectorAll('#depositsTableBody tr').length - 1;
         const withdrawals = document.querySelectorAll('#withdrawalsTableBody tr').length - 1;
         const kyc = document.querySelectorAll('.kyc-card').length;
         
@@ -2927,7 +3305,7 @@
             if (result.success) {
                 const row = document.getElementById(`user-${currentItemId}`);
                 if (row) {
-                    const statusCell = row.querySelectorAll('td')[7];
+                    const statusCell = row.querySelectorAll('td')[8];
                     const banBtn = row.querySelector('.btn-icon.danger, .btn-icon.success');
                     
                     if (currentItemData?.ban) {
@@ -2949,6 +3327,28 @@
                     }
                 }
             }
+        } else if (currentAction === 'catchUpAllPayouts') {
+            showLoading();
+            try {
+                const response = await fetch(CATCH_UP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': CSRF_TOKEN,
+                    },
+                    credentials: 'same-origin'
+                });
+                const result = await response.json();
+                hideLoading();
+                if (result.success) {
+                    showToast(`✅ Processed ${result.processed} payouts for ${result.users} users`, 'success');
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    showToast(result.error || 'Error processing payouts', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showToast('Network error: ' + error.message, 'error');
+            }
         }
         
         currentAction = null;
@@ -2958,17 +3358,15 @@
 
     // ========== KEYBOARD SHORTCUTS ==========
     document.addEventListener('keydown', function(e) {
-        // Ctrl+1 to Ctrl+9 for tab switching
         if (e.ctrlKey && e.key >= '1' && e.key <= '9') {
             e.preventDefault();
-            const tabs = ['dashboard', 'deposits', 'withdrawals', 'investments', 'users', 'tokens', 'kyc', 'transactions', 'logs'];
+            const tabs = ['dashboard', 'deposits', 'withdrawals', 'investments', 'payouts', 'users', 'tokens', 'kyc', 'transactions', 'logs'];
             const index = parseInt(e.key) - 1;
             if (tabs[index]) {
                 switchTab(tabs[index]);
             }
         }
         
-        // Escape to close modals
         if (e.key === 'Escape') {
             const openModals = document.querySelectorAll('.modal.show');
             openModals.forEach(modal => {
@@ -2983,11 +3381,11 @@
     // ========== AUTO-REFRESH ==========
     setInterval(function() {
         if (currentTab === 'deposits') {
-            // Auto-refresh deposits every 30 seconds
             filterDeposits();
         } else if (currentTab === 'withdrawals') {
-            // Auto-refresh withdrawals every 30 seconds
             filterWithdrawals();
+        } else if (currentTab === 'payouts' || currentTab === 'dashboard') {
+            refreshPayoutStats();
         }
     }, 30000);
 </script>

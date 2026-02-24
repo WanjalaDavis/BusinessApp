@@ -528,10 +528,13 @@ class Investment(TimeStampedModel):
             
             # Lock the funds in wallet
             wallet = self.user.wallet
+            
+            # Check if user has enough available balance
             if wallet.available_balance() < self.amount:
                 raise ValidationError("Insufficient balance")
             
-            wallet.balance -= self.amount
+            # FIXED: DO NOT subtract from balance - only lock the amount
+            # The money is still yours, it's just locked in an investment
             wallet.locked_balance += self.amount
             wallet.save()
             
@@ -581,13 +584,16 @@ class Investment(TimeStampedModel):
             investment=self  # This uses the related_name='transaction_entries'
         )
         
-        # Update balances - FIXED: Use Decimal for calculations
+        # Update balances
         wallet = self.user.wallet
+        
+        # Add the profit to balance
         wallet.balance += payout_amount
         wallet.total_earned += payout_amount
         
-        # Gradually unlock - FIXED: Convert to Decimal properly
+        # Gradually unlock principal - ADD IT BACK TO BALANCE!
         daily_unlock = Decimal(str(float(self.amount) / self.token.return_days))
+        wallet.balance += daily_unlock        # ← FIXED: Add unlocked principal back to balance
         wallet.locked_balance -= daily_unlock
         wallet.save()
         
@@ -607,9 +613,10 @@ class Investment(TimeStampedModel):
         """Mark investment as completed"""
         self.status = 'COMPLETED'
         
-        # Unlock any remaining locked balance - FIXED: Proper Decimal calculation
+        # Unlock any remaining locked balance and add back to total balance
         wallet = self.user.wallet
         remaining_unlock = Decimal(str(float(self.amount) * self.remaining_payouts / self.token.return_days))
+        wallet.balance += remaining_unlock      # ← FIXED: Add remaining principal back to balance
         wallet.locked_balance -= remaining_unlock
         wallet.save()
         
