@@ -14,6 +14,7 @@ from decimal import Decimal, InvalidOperation
 import re
 import json
 import logging
+import math
 from datetime import timedelta
 
 from .models import (
@@ -62,13 +63,17 @@ logger = logging.getLogger(__name__)
 
 
 def check_user_payouts(user):
-  
+    """
+    Enhanced version that catches up ALL missed payouts for a user
+    Calculates how many 24-hour cycles have passed and issues all due payouts
+    """
     if not user.is_authenticated:
         return 0
     
     from .models import Investment
     from django.utils import timezone
     from datetime import timedelta
+    import math
     
     # Get user's active investments that still have payouts remaining
     investments = Investment.objects.filter(
@@ -82,27 +87,173 @@ def check_user_payouts(user):
     
     for investment in investments:
         try:
+            # Calculate how many payouts should have been processed by now
+            payouts_to_process = calculate_missed_payouts(investment, now)
             
-            if not investment.last_payout_date:
+            if payouts_to_process > 0:
+                logger.info(f"Found {payouts_to_process} missed payouts for investment {investment.id}")
                 
-                if now >= investment.created_at + timedelta(hours=24):
-                    investment.process_daily_payout()
-                    processed_count += 1
-                    logger.info(f"TEST: Processed first payout for investment {investment.id}")
-            else:
-                
-                if now >= investment.last_payout_date + timedelta(hours=24):
-                    investment.process_daily_payout()
-                    processed_count += 1
-                    logger.info(f"TEST: Processed subsequent payout for investment {investment.id}")
-                    
+                # Process each missed payout
+                for i in range(payouts_to_process):
+                    success = investment.process_daily_payout()
+                    if success:
+                        processed_count += 1
+                    else:
+                        # Stop if we hit an error or investment completed
+                        break
+                        
         except Exception as e:
             logger.error(f"Auto-payout error for investment {investment.id}: {str(e)}")
     
     if processed_count > 0:
-        logger.info(f"TEST: Auto-processed {processed_count} payouts for user {user.username}")
+        logger.info(f"Processed {processed_count} catch-up payouts for user {user.username}")
     
     return processed_count
+
+
+def calculate_missed_payouts(investment, current_time):
+    """
+    Calculate how many payouts are due for an investment based on 24-hour cycles
+    Returns integer number of payouts that should have been processed
+    """
+    from datetime import timedelta
+    
+    # Don't calculate if investment is not active
+    if investment.status != 'ACTIVE' or investment.remaining_payouts <= 0:
+        return 0
+    
+    # Base reference time for calculations
+    if not investment.last_payout_date:
+        # No payouts yet - base is creation time
+        reference_time = investment.created_at
+        payouts_done = 0
+    else:
+        # Already had some payouts - base is last payout time
+        reference_time = investment.last_payout_date
+        # Count how many payouts have been done
+        payouts_done = investment.token.return_days - investment.remaining_payouts
+    
+    # Calculate hours since reference time
+    hours_since_ref = (current_time - reference_time).total_seconds() / 3600
+    
+    # Calculate how many 24-hour cycles have passed
+    cycles_passed = math.floor(hours_since_ref / 24)
+    
+    # Calculate maximum possible payouts from start until now
+    total_possible_payouts = math.floor(
+        (current_time - investment.created_at).total_seconds() / (24 * 3600)
+    )
+    
+    # Payouts that should have been done = total_possible - payouts_done
+    expected_payouts = total_possible_payouts - payouts_done
+    
+    # Don't exceed remaining_payouts
+    due_payouts = min(expected_payouts, investment.remaining_payouts)
+    
+    # Log for debugging
+    if due_payouts > 0:
+        logger.debug(f"""
+            Investment {investment.id}:
+            - Created: {investment.created_at}
+            - Last payout: {investment.last_payout_date}
+            - Current time: {current_time}
+            - Hours since ref: {hours_since_ref}
+            - Cycles passed: {cycles_passed}
+            - Total possible: {total_possible_payouts}
+            - Payouts done: {payouts_done}
+            - Expected: {expected_payouts}
+            - Due now: {due_payouts}
+        """)
+    
+    return due_payouts
+
+
+def catch_up_all_users_payouts():
+    """
+    Admin function to catch up payouts for ALL users
+    Run this once to fix all historical payouts
+    """
+    from django.contrib.auth.models import User
+    from django.db.models import Q
+    
+    total_processed = 0
+    users_processed = 0
+    
+    # Get all users with active investments
+    users_with_investments = User.objects.filter(
+        investments__status='ACTIVE',
+        investments__remaining_payouts__gt=0
+    ).distinct()
+    
+    for user in users_with_investments:
+        try:
+            processed = check_user_payouts(user)
+            if processed > 0:
+                total_processed += processed
+                users_processed += 1
+                logger.info(f"Caught up {processed} payouts for user {user.username}")
+        except Exception as e:
+            logger.error(f"Error catching up payouts for user {user.username}: {str(e)}")
+    
+    logger.info(f"Complete catch-up finished: {total_processed} payouts for {users_processed} users")
+    return total_processed, users_processed
+
+
+# ==================== ADMIN VIEW FOR CATCH-UP ====================
+
+@login_required(login_url='XMR:signupin')
+def admin_catch_up_payouts(request):
+    """Admin view to manually trigger catch-up for all users"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        total_processed, users_processed = catch_up_all_users_payouts()
+        
+        SystemLog.objects.create(
+            log_type='ADMIN_ACTION',
+            user=request.user,
+            action='CATCH_UP_PAYOUTS',
+            description=f'Admin triggered catch-up payouts: {total_processed} payouts for {users_processed} users'
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Caught up {total_processed} payouts for {users_processed} users',
+            'processed': total_processed,
+            'users': users_processed
+        })
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+# ==================== INDIVIDUAL INVESTMENT FIX ====================
+
+def fix_investment_payouts(investment_id):
+    """
+    Fix payouts for a specific investment
+    Useful for targeted fixes
+    """
+    from .models import Investment
+    
+    try:
+        investment = Investment.objects.get(id=investment_id)
+        user = investment.user
+        
+        processed = check_user_payouts(user)
+        
+        return {
+            'success': True,
+            'investment_id': investment_id,
+            'user': user.username,
+            'payouts_processed': processed,
+            'new_remaining': investment.remaining_payouts,
+            'new_status': investment.status
+        }
+    except Investment.DoesNotExist:
+        return {'success': False, 'error': 'Investment not found'}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
 
 
 

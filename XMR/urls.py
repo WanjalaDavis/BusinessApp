@@ -56,6 +56,10 @@ urlpatterns = [
     path('admin/check-expired/', views.admin_check_expired, name='admin_check_expired'),
     path('admin/payout-stats/', views.admin_payout_stats, name='admin_payout_stats'),
     
+    # ========== NEW: ADMIN CATCH-UP PAYOUT ROUTES ==========
+    path('admin/catch-up-payouts/', views.admin_catch_up_payouts, name='admin_catch_up_payouts'),
+    path('admin/fix-investment/<int:investment_id>/', views.fix_investment_payouts, name='fix_investment_payouts'),
+    
     # ==================== API ROUTES ====================
     path('api/wallet/balance/', views.api_wallet_balance, name='api_wallet_balance'),
     path('api/investment/stats/', views.api_investment_stats, name='api_investment_stats'),
