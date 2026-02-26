@@ -96,13 +96,15 @@ class UserProfile(TimeStampedModel):
 class Wallet(TimeStampedModel):
     """
     User's wallet for managing funds.
+    - balance: Available money the user can withdraw or invest (deposits + profits - withdrawals - investments)
+    - locked_balance: Money currently active in investments (cannot be withdrawn until investment completes)
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='wallet')
-    balance = models.DecimalField(max_digits=20, decimal_places=2, default=Decimal('0.00'))
+    balance = models.DecimalField(max_digits=20, decimal_places=2, default=Decimal('0.00'))  # Available balance
     locked_balance = models.DecimalField(max_digits=20, decimal_places=2, default=Decimal('0.00'))  # Funds in active investments
     total_deposited = models.DecimalField(max_digits=20, decimal_places=2, default=Decimal('0.00'))
     total_withdrawn = models.DecimalField(max_digits=20, decimal_places=2, default=Decimal('0.00'))
-    total_earned = models.DecimalField(max_digits=20, decimal_places=2, default=Decimal('0.00'))
+    total_earned = models.DecimalField(max_digits=20, decimal_places=2, default=Decimal('0.00'))  # Profits + referral bonuses
     
     # Currency (default KSH)
     currency = models.CharField(max_length=3, default='KSH')
@@ -113,11 +115,30 @@ class Wallet(TimeStampedModel):
         ]
     
     def available_balance(self):
-        """Balance available for withdrawal/investment"""
-        return self.balance - self.locked_balance
+        """Balance available for withdrawal/investment (should never be negative)"""
+        return self.balance
+    
+    def get_breakdown(self):
+        """Get wallet breakdown for display"""
+        return {
+            'available_balance': self.balance,           # Money user can use now
+            'locked_in_investments': self.locked_balance, # Money working in investments
+            'total_balance': self.balance + self.locked_balance,  # Total net worth
+            'total_deposited': self.total_deposited,
+            'total_withdrawn': self.total_withdrawn,
+            'total_profits_earned': self.total_earned,
+        }
+    
+    def can_invest(self, amount):
+        """Check if user has enough available balance to invest"""
+        return self.balance >= amount
+    
+    def can_withdraw(self, amount):
+        """Check if user has enough available balance to withdraw"""
+        return self.balance >= amount
     
     def update_balances(self):
-        """Recalculate balances from transactions"""
+        """Recalculate balances from transactions (admin use only)"""
         deposits = self.transactions.filter(
             transaction_type='DEPOSIT',
             status='COMPLETED'
@@ -139,22 +160,7 @@ class Wallet(TimeStampedModel):
         self.save()
     
     def __str__(self):
-        return f"{self.user.username}'s Wallet - Balance: {self.balance} {self.currency}"
-    
-    def can_withdraw(self, amount):
-        """Check if total balance is sufficient for withdrawal"""
-        return self.balance >= amount
-    
-    def get_breakdown(self):
-        """Get wallet breakdown for display"""
-        return {
-            'total_balance': self.balance,
-            'locked': self.locked_balance,
-            'available': self.available_balance(),
-            'deposited': self.total_deposited,
-            'withdrawn': self.total_withdrawn,
-            'earned': self.total_earned,
-        }
+        return f"{self.user.username}'s Wallet - Available: {self.balance} {self.currency} | Locked: {self.locked_balance} {self.currency}"
 
 
 class Transaction(TimeStampedModel):
@@ -186,7 +192,7 @@ class Transaction(TimeStampedModel):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True)
     description = models.CharField(max_length=255)
     
-    # For related objects - FIXED: Added unique related_name to avoid clashes
+    # For related objects
     investment = models.ForeignKey('Investment', on_delete=models.SET_NULL, null=True, blank=True, related_name='transaction_entries')
     withdrawal = models.ForeignKey('WithdrawalRequest', on_delete=models.SET_NULL, null=True, blank=True, related_name='transaction_entries')
     
@@ -223,7 +229,7 @@ class Transaction(TimeStampedModel):
             self.wallet.balance += self.amount
         elif self.transaction_type == 'WITHDRAWAL':
             if self.wallet.balance < self.amount:
-                raise ValidationError("Insufficient balance")
+                raise ValidationError("Insufficient available balance")
             self.wallet.balance -= self.amount
         elif self.transaction_type == 'INVESTMENT':
             # Investment is handled in Investment model save method
@@ -365,7 +371,7 @@ class MpesaPayment(TimeStampedModel):
         self.transaction = transaction
         self.save()
         
-        # Update wallet
+        # Update wallet - add to available balance
         wallet = self.user.wallet
         wallet.balance += self.amount
         wallet.total_deposited += self.amount
@@ -505,7 +511,7 @@ class Investment(TimeStampedModel):
     total_paid = models.DecimalField(max_digits=20, decimal_places=2, default=Decimal('0.00'))
     remaining_payouts = models.IntegerField()
     
-    # Related transaction - FIXED: Added unique related_name
+    # Related transaction
     transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, null=True, blank=True, related_name='investment_purchase')
     
     class Meta:
@@ -530,12 +536,12 @@ class Investment(TimeStampedModel):
             wallet = self.user.wallet
             
             # Check if user has enough available balance
-            if wallet.available_balance() < self.amount:
-                raise ValidationError("Insufficient balance")
+            if wallet.balance < self.amount:
+                raise ValidationError(f"Insufficient available balance. You have {wallet.balance} KSH available.")
             
-            # FIXED: DO NOT subtract from balance - only lock the amount
-            # The money is still yours, it's just locked in an investment
-            wallet.locked_balance += self.amount
+            # MOVE money from available to locked
+            wallet.balance -= self.amount        # Decrease available balance
+            wallet.locked_balance += self.amount  # Increase locked balance
             wallet.save()
             
             # Save investment first to get an ID
@@ -548,7 +554,7 @@ class Investment(TimeStampedModel):
                 amount=self.amount,
                 description=f"Investment in {self.token.name}",
                 status='COMPLETED',
-                investment=self  # Now self has an ID
+                investment=self
             )
             
             # Update investment with transaction reference
@@ -563,7 +569,7 @@ class Investment(TimeStampedModel):
             super().save(*args, **kwargs)
     
     def process_daily_payout(self):
-        """Process a single day's payout"""
+        """Process a single day's payout - PROFIT ONLY, no principal unlocking"""
         if self.status != 'ACTIVE':
             return False
         
@@ -571,34 +577,33 @@ class Investment(TimeStampedModel):
             self.complete_investment()
             return False
         
-        # Calculate payout (can add tax here if needed)
-        payout_amount = self.daily_return
+        # Calculate payout (profit only - principal stays locked until investment completes)
+        profit_amount = self.daily_return
         
         # Create profit transaction
         transaction = Transaction.objects.create(
             wallet=self.user.wallet,
             transaction_type='PROFIT',
-            amount=payout_amount,
-            description=f"Daily return from {self.token.name}",
+            amount=profit_amount,
+            description=f"Daily profit from {self.token.name}",
             status='COMPLETED',
-            investment=self  # This uses the related_name='transaction_entries'
+            investment=self
         )
         
-        # Update balances
+        # Update wallet - ONLY ADD PROFIT to available balance
         wallet = self.user.wallet
         
-        # Add the profit to balance
-        wallet.balance += payout_amount
-        wallet.total_earned += payout_amount
+        # Add the profit to available balance
+        wallet.balance += profit_amount
+        wallet.total_earned += profit_amount
         
-        # Gradually unlock principal - ADD IT BACK TO BALANCE!
-        daily_unlock = Decimal(str(float(self.amount) / self.token.return_days))
-        wallet.balance += daily_unlock        # ← FIXED: Add unlocked principal back to balance
-        wallet.locked_balance -= daily_unlock
+        # DO NOT decrease locked_balance - principal remains locked!
+        # Principal will be returned ONLY when investment completes
+        
         wallet.save()
         
         # Update investment
-        self.total_paid += payout_amount
+        self.total_paid += profit_amount
         self.remaining_payouts -= 1
         self.last_payout_date = timezone.now()
         
@@ -610,19 +615,17 @@ class Investment(TimeStampedModel):
         return True
     
     def complete_investment(self):
-        """Mark investment as completed"""
+        """Mark investment as completed - RETURN THE PRINCIPAL to available balance"""
         self.status = 'COMPLETED'
         
-        # Unlock any remaining locked balance and add back to total balance
+        # Return the FULL principal to available balance
         wallet = self.user.wallet
-        remaining_unlock = Decimal(str(float(self.amount) * self.remaining_payouts / self.token.return_days))
-        wallet.balance += remaining_unlock      # ← FIXED: Add remaining principal back to balance
-        wallet.locked_balance -= remaining_unlock
+        wallet.balance += self.amount              # Return principal to available balance
+        wallet.locked_balance -= self.amount       # Remove from locked balance
         wallet.save()
         
         self.save()
     
-    # ===== NEW METHOD ADDED FOR AUTO PAYOUT CHECKING =====
     def check_and_process_payout(self):
         """
         Check if 24 hours have passed and process payout if needed
@@ -647,7 +650,6 @@ class Investment(TimeStampedModel):
                 return self.process_daily_payout()
         
         return False
-    # ====================================================
     
     def get_progress_percentage(self):
         """Calculate investment progress"""
@@ -663,7 +665,7 @@ class Investment(TimeStampedModel):
 
 class WithdrawalRequest(TimeStampedModel):
     """
-    User withdrawal requests
+    User withdrawal requests - ONLY affects available balance, never locked balance
     """
     WITHDRAWAL_STATUS = [
         ('PENDING', 'Pending'),
@@ -713,10 +715,8 @@ class WithdrawalRequest(TimeStampedModel):
             models.Index(fields=['request_id']),
         ]
     
-    
-
     def save(self, *args, **kwargs):
-        if not self.pk:  
+        if not self.pk:  # New withdrawal request
             # Calculate 5% tax
             self.tax_amount = self.amount * Decimal('0.05')
             self.net_amount = self.amount - self.tax_amount
@@ -725,15 +725,15 @@ class WithdrawalRequest(TimeStampedModel):
             if self.amount < 200:
                 raise ValidationError("Minimum withdrawal amount is 200 KSH")
             
-            
             wallet = self.user.wallet
-            if wallet.balance < self.amount:  
-                raise ValidationError(f"Insufficient balance. You have {wallet.balance} KSH total, but requested {self.amount} KSH.")
             
+            # Check available balance (not locked balance)
+            if wallet.balance < self.amount:
+                raise ValidationError(f"Insufficient available balance. You have {wallet.balance} KSH available, but requested {self.amount} KSH.")
             
-            wallet.locked_balance += self.amount
-            wallet.save()
-        
+            # NO LOCKING for withdrawals - they come directly from available balance
+            # The money remains available until withdrawal is processed
+            
         super().save(*args, **kwargs)
     
     def process(self, admin_user, transaction_code=None):
@@ -748,11 +748,15 @@ class WithdrawalRequest(TimeStampedModel):
         self.save()
     
     def complete(self, admin_user, transaction_code):
-        """Mark withdrawal as completed"""
+        """Mark withdrawal as completed - DEDUCT FROM AVAILABLE BALANCE ONLY"""
         if self.status not in ['PENDING', 'PROCESSING']:
             raise ValidationError("Can only complete pending or processing withdrawals")
         
         wallet = self.user.wallet
+        
+        # Check available balance again (in case it changed)
+        if wallet.balance < self.amount:
+            raise ValidationError(f"Insufficient available balance. Current balance: {wallet.balance} KSH")
         
         # Create withdrawal transaction
         transaction = Transaction.objects.create(
@@ -761,16 +765,16 @@ class WithdrawalRequest(TimeStampedModel):
             amount=self.amount,
             description=f"Withdrawal via {self.payment_method}",
             status='COMPLETED',
-            withdrawal=self  # This uses the related_name='transaction_entries'
+            withdrawal=self
         )
         transaction.processed_by = admin_user
         transaction.processed_at = timezone.now()
         transaction.save()
         
-        # Update wallet
-        wallet.balance -= self.amount
-        wallet.locked_balance -= self.amount
-        wallet.total_withdrawn += self.amount
+        # Update wallet - ONLY deduct from available balance
+        wallet.balance -= self.amount              # Decrease available balance
+        # DO NOT touch locked_balance - withdrawals don't affect locked funds
+        wallet.total_withdrawn += self.amount      # Update total withdrawn
         wallet.save()
         
         # Add tax as separate transaction or record
@@ -788,14 +792,12 @@ class WithdrawalRequest(TimeStampedModel):
         self.save()
     
     def reject(self, admin_user, reason):
-        """Reject withdrawal request"""
+        """Reject withdrawal request - NO FUNDS TO UNLOCK"""
         if self.status not in ['PENDING', 'PROCESSING']:
             raise ValidationError("Can only reject pending or processing withdrawals")
         
-        # Unlock the amount
-        wallet = self.user.wallet
-        wallet.locked_balance -= self.amount
-        wallet.save()
+        # NO NEED to unlock anything since we didn't lock
+        # The funds never left available balance
         
         self.status = 'REJECTED'
         self.processed_by = admin_user
@@ -804,14 +806,11 @@ class WithdrawalRequest(TimeStampedModel):
         self.save()
     
     def cancel(self):
-        """User cancels withdrawal request"""
+        """User cancels withdrawal request - NO FUNDS TO UNLOCK"""
         if self.status != 'PENDING':
             raise ValidationError("Can only cancel pending withdrawals")
         
-        # Unlock the amount
-        wallet = self.user.wallet
-        wallet.locked_balance -= self.amount
-        wallet.save()
+        # NO NEED to unlock anything since we didn't lock
         
         self.status = 'CANCELLED'
         self.save()
@@ -955,5 +954,12 @@ class AdminDashboard:
                 'total_commission': Transaction.objects.filter(
                     transaction_type='REFERRAL_BONUS'
                 ).aggregate(total=Sum('amount'))['total'] or 0,
+            },
+            'system_balances': {
+                'total_available_balance': Wallet.objects.aggregate(total=Sum('balance'))['total'] or 0,
+                'total_locked_balance': Wallet.objects.aggregate(total=Sum('locked_balance'))['total'] or 0,
+                'total_system_assets': Wallet.objects.aggregate(
+                    total=Sum('balance') + Sum('locked_balance')
+                )['total'] or 0,
             }
         }

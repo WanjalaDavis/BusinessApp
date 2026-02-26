@@ -27,41 +27,6 @@ logger = logging.getLogger(__name__)
 
 # ==================== AUTO PAYOUT HELPER FUNCTION ====================
 
-# def check_user_payouts(user):
-#     """
-#     Check and process any due payouts for a user
-#     Call this whenever a user loads a page
-#     """
-#     if not user.is_authenticated:
-#         return 0
-    
-#     from .models import Investment
-   
-#     investments = Investment.objects.filter(
-#         user=user,
-#         status='ACTIVE',
-#         remaining_payouts__gt=0
-#     )
-    
-#     processed_count = 0
-    
-#     for investment in investments:
-#         try:
-           
-#             if investment.check_and_process_payout():
-#                 processed_count += 1
-#                 logger.info(f"Auto-payout processed for investment {investment.id} - User: {user.username}")
-#         except Exception as e:
-#             logger.error(f"Auto-payout error for investment {investment.id}: {str(e)}")
-    
-#     if processed_count > 0:
-#         logger.info(f"Auto-processed {processed_count} payouts for user {user.username}")
-    
-#     return processed_count
-
-
-
-
 def check_user_payouts(user):
     """
     Enhanced version that catches up ALL missed payouts for a user
@@ -252,10 +217,6 @@ def fix_investment_payouts(investment_id):
         return {'success': False, 'error': 'Investment not found'}
     except Exception as e:
         return {'success': False, 'error': str(e)}
-
-
-
-
 
 
 # ==================== PUBLIC VIEWS ====================
@@ -532,7 +493,7 @@ def signup_with_ref(request):
     return redirect('XMR:signupin')
 
 
-# ==================== USER ACCOUNT VIEW (CONSOLIDATED) ====================
+# ==================== USER ACCOUNT VIEW ====================
 
 @login_required(login_url='XMR:signupin')
 def account(request):
@@ -678,6 +639,8 @@ def account(request):
         'profile': profile,
         'wallet': wallet,
         'available_balance': wallet.available_balance(),
+        'locked_balance': wallet.locked_balance,
+        'total_balance': wallet.balance + wallet.locked_balance,
         
         # Stats
         'total_invested': total_invested,
@@ -805,15 +768,8 @@ def handle_kyc_upload(request, profile):
     messages.success(request, 'KYC documents uploaded successfully! They will be verified by admin.')
     return redirect('XMR:account')
 
-# ==================== LEGACY PROFILE UPDATE REDIRECT ====================
 
-@login_required(login_url='XMR:signupin')
-def update_profile(request):
-    """Legacy profile update - redirect to account page"""
-    return redirect('XMR:account')
-
-
-# ==================== DEPOSIT VIEWS (POST ONLY) ====================
+# ==================== DEPOSIT VIEWS ====================
 
 @login_required(login_url='XMR:signupin')
 def create_deposit(request):
@@ -876,7 +832,6 @@ def create_deposit(request):
         messages.error(request, f'Error creating deposit: {str(e)}')
         logger.error(f"Deposit creation error: {str(e)}", exc_info=True)
     
-    
     return HttpResponseRedirect('/account/?tab=deposits')
 
 
@@ -884,7 +839,7 @@ def create_deposit(request):
 
 @login_required(login_url='XMR:signupin')
 def create_withdrawal(request):
-    """Create a new withdrawal request"""
+    """Create a new withdrawal request - ONLY affects available balance"""
     if request.method != 'POST':
         return redirect('XMR:account')
     
@@ -904,11 +859,11 @@ def create_withdrawal(request):
             messages.error(request, f'Minimum withdrawal is {min_withdrawal} KSH')
             return redirect('XMR:account')
         
-        # CHECK TOTAL BALANCE, NOT AVAILABLE BALANCE
-        if wallet.balance < amount:  # Changed from available_balance() to balance
+        # CHECK AVAILABLE BALANCE ONLY (balance field)
+        if wallet.balance < amount:
             messages.error(
                 request, 
-                f'Insufficient balance. You have {wallet.balance} KSH total, but requested {amount} KSH.'
+                f'Insufficient available balance. You have {wallet.balance} KSH available, but requested {amount} KSH.'
             )
             return redirect('XMR:account')
             
@@ -937,6 +892,9 @@ def create_withdrawal(request):
             bank_details=bank_details if payment_method == 'BANK' else None
         )
         
+        # NOTE: WithdrawalRequest.save() no longer locks the amount
+        # It just checks available balance but doesn't modify it
+        
         messages.success(request, f'Withdrawal request for {amount} KSH submitted successfully! It will be processed by admin.')
         
         # Log the withdrawal request
@@ -955,9 +913,10 @@ def create_withdrawal(request):
     
     return HttpResponseRedirect('/account/?tab=withdrawals')
 
+
 @login_required(login_url='XMR:signupin')
 def cancel_withdrawal(request, withdrawal_id):
-    """Cancel a pending withdrawal request"""
+    """Cancel a pending withdrawal request - NO FUNDS TO UNLOCK"""
     withdrawal = get_object_or_404(WithdrawalRequest, id=withdrawal_id, user=request.user)
     
     if withdrawal.status != 'PENDING':
@@ -965,7 +924,7 @@ def cancel_withdrawal(request, withdrawal_id):
         return redirect('XMR:account')
     
     try:
-        withdrawal.cancel()
+        withdrawal.cancel()  # No funds to unlock
         messages.success(request, 'Withdrawal request cancelled successfully')
         
         SystemLog.objects.create(
@@ -995,7 +954,7 @@ def investments(request):
     # Get active tokens
     active_tokens = Token.objects.filter(status='ACTIVE').order_by('token_number')
     
-    # Get user's investments - SEPARATE by status (NO SLICING BEFORE FILTERING)
+    # Get user's investments
     user_investments_all = Investment.objects.filter(
         user=request.user
     ).select_related('token').order_by('-created_at')
@@ -1035,9 +994,11 @@ def investments(request):
         'active_tokens': active_tokens,
         'active_investments': active_investments,
         'completed_investments': completed_investments,
-        'user_investments': user_investments_all,  # Keep for backward compatibility
+        'user_investments': user_investments_all,
         'wallet': wallet,
         'available_balance': wallet.available_balance(),
+        'locked_balance': wallet.locked_balance,
+        'total_balance': wallet.balance + wallet.locked_balance,
         'total_invested': total_invested,
         'total_earned': total_earned,
         'next_payout_days': next_payout_days,
@@ -1058,8 +1019,7 @@ def investment_detail(request, token_id):
 def buy_investment(request, token_id):
     """
     Process investment purchase with atomic transaction
-    Ensures money is only deducted if investment is successfully created
-    FIXED: Removed race conditions and redundant operations
+    Moves money from available balance to locked balance
     """
     if request.method != 'POST':
         return redirect('XMR:investment_detail', token_id=token_id)
@@ -1072,8 +1032,8 @@ def buy_investment(request, token_id):
         token = Token.objects.select_for_update().get(id=token_id)
         wallet = Wallet.objects.select_for_update().get(user=request.user)
         
-        # DEBUG LOGGING - Add this temporarily to debug
-        logger.debug(f"User {request.user.username} - Balance: {wallet.balance}, Locked: {wallet.locked_balance}, Available: {wallet.available_balance()}")
+        # DEBUG LOGGING
+        logger.debug(f"User {request.user.username} - Available: {wallet.balance}, Locked: {wallet.locked_balance}")
         
         # Validate token is available
         if token.status != 'ACTIVE':
@@ -1087,11 +1047,10 @@ def buy_investment(request, token_id):
         # Check minimum investment
         amount = token.minimum_investment
         
-        # Check balance using available_balance method
-        available = wallet.available_balance()
-        if available < amount:
-            messages.error(request, f'Insufficient balance. You need {amount} KSH, but you have {available} KSH available')
-            logger.warning(f"Insufficient balance for user {request.user.username}: Have {available}, Need {amount}")
+        # Check available balance (balance field)
+        if wallet.balance < amount:
+            messages.error(request, f'Insufficient available balance. You need {amount} KSH, but you have {wallet.balance} KSH available')
+            logger.warning(f"Insufficient balance for user {request.user.username}: Have {wallet.balance}, Need {amount}")
             return redirect('XMR:investments')
         
         # Check max purchases
@@ -1104,14 +1063,7 @@ def buy_investment(request, token_id):
                 messages.error(request, f'You have reached the maximum purchases for this token')
                 return redirect('XMR:investments')
         
-        # FIXED: Let the model's save method handle everything
-        # The Investment model's save method will:
-        # 1. Check balance again
-        # 2. Deduct from wallet
-        # 3. Create the investment
-        # 4. Create the transaction
-        # 5. Update token purchase count
-        
+        # Create investment - this will move money from available to locked
         investment = Investment.objects.create(
             user=request.user,
             token=token,
@@ -1127,7 +1079,7 @@ def buy_investment(request, token_id):
         
         # Log success
         logger.info(f"✅ Investment created: ID {investment.id} for user {request.user.username}")
-        logger.debug(f"New wallet state - Balance: {wallet.balance}, Locked: {wallet.locked_balance}")
+        logger.debug(f"New wallet state - Available: {wallet.balance}, Locked: {wallet.locked_balance}")
         
         # Create success message with details
         success_message = (
@@ -1169,112 +1121,6 @@ def buy_investment(request, token_id):
     return redirect('XMR:investments')
 
 
-# ==================== RECOVERY VIEW FOR FAILED INVESTMENTS ====================
-
-@login_required(login_url='XMR:signupin')
-@transaction.atomic
-def recover_failed_investment(request):
-    """
-    Admin-only view to recover from failed investments where money was deducted
-    but investment wasn't created
-    """
-    if not request.user.is_staff:
-        messages.error(request, 'Unauthorized access')
-        return redirect('XMR:account')
-    
-    if request.method != 'POST':
-        return redirect('XMR:myadmin')
-    
-    user_id = request.POST.get('user_id')
-    amount = request.POST.get('amount')
-    token_id = request.POST.get('token_id')
-    
-    try:
-        user = User.objects.get(id=user_id)
-        wallet = Wallet.objects.select_for_update().get(user=user)
-        token = Token.objects.get(id=token_id)
-        
-        # Check if there's a discrepancy (balance reduced but no investment)
-        with transaction.atomic():
-            # Check if investment already exists
-            existing_investment = Investment.objects.filter(
-                user=user,
-                token=token,
-                amount=amount
-            ).first()
-            
-            if existing_investment:
-                messages.warning(request, f'Investment already exists for {user.username}')
-                return redirect('XMR:myadmin')
-            
-            # Create the missing investment
-            investment = Investment.objects.create(
-                user=user,
-                token=token,
-                amount=amount
-            )
-            
-            # Create transaction record if it doesn't exist
-            if not investment.transaction:
-                transaction_record = Transaction.objects.create(
-                    wallet=wallet,
-                    transaction_type='INVESTMENT',
-                    amount=amount,
-                    description=f"Recovered investment in {token.name}",
-                    status='COMPLETED',
-                    investment=investment,
-                    processed_by=request.user,
-                    processed_at=timezone.now()
-                )
-                investment.transaction = transaction_record
-                investment.save(update_fields=['transaction'])
-            
-            messages.success(request, f'Successfully recovered investment for {user.username}')
-            logger.info(f"Admin {request.user.username} recovered investment for user {user.username}")
-            
-    except User.DoesNotExist:
-        messages.error(request, 'User not found')
-    except Token.DoesNotExist:
-        messages.error(request, 'Token not found')
-    except Exception as e:
-        messages.error(request, f'Recovery failed: {str(e)}')
-        logger.error(f"Investment recovery error: {str(e)}", exc_info=True)
-    
-    return redirect('XMR:myadmin')
-
-
-# ==================== REDIRECT OLD DASHBOARD TO ACCOUNT ====================
-
-@login_required(login_url='XMR:signupin')
-def dashboard(request):
-    """Redirect old dashboard to account page"""
-    return redirect('XMR:account')
-
-
-@login_required(login_url='XMR:signupin')
-def deposits(request):
-    """Redirect old deposits page to account page"""
-    return redirect('XMR:account#deposits-tab')
-
-
-@login_required(login_url='XMR:signupin')
-def withdrawals(request):
-    """Redirect old withdrawals page to account page"""
-    return redirect('XMR:account#withdrawals-tab')
-
-
-@login_required(login_url='XMR:signupin')
-def transactions(request):
-    """Redirect old transactions page to account page"""
-    return redirect('XMR:account#transactions-tab')
-
-
-@login_required(login_url='XMR:signupin')
-def referrals(request):
-    """Redirect old referrals page to account page"""
-    return redirect('XMR:account#referrals-tab')
-
-
 # ==================== ADMIN VIEWS ====================
 
 @login_required(login_url='XMR:signupin')
@@ -1308,6 +1154,18 @@ def myadmin(request):
         'total_profits_paid': float(Transaction.objects.filter(
             transaction_type='PROFIT', status='COMPLETED'
         ).aggregate(total=Sum('amount'))['total'] or 0),
+        
+        'total_system_balance': float(Wallet.objects.aggregate(
+            total=Sum('balance')
+        )['total'] or 0),
+        
+        'total_locked_balance': float(Wallet.objects.aggregate(
+            total=Sum('locked_balance')
+        )['total'] or 0),
+        
+        'total_system_assets': float(Wallet.objects.aggregate(
+            total=Sum('balance') + Sum('locked_balance')
+        )['total'] or 0),
         
         'pending_deposits': MpesaPayment.objects.filter(status='PENDING').count(),
         'pending_withdrawals': WithdrawalRequest.objects.filter(status='PENDING').count(),
@@ -1381,7 +1239,7 @@ def myadmin(request):
             'created_at': w.created_at.strftime('%Y-%m-%d %H:%M'),
         })
     
-    # ========== INVESTMENTS DATA (NEW) ==========
+    # ========== INVESTMENTS DATA ==========
     investment_status = request.GET.get('investment_status', '')
     investments_query = Investment.objects.select_related(
         'user', 'token'
@@ -1422,7 +1280,7 @@ def myadmin(request):
             'transaction_id': inv.transaction.id if inv.transaction else None,
         })
     
-    # ========== TRANSACTIONS DATA (NEW) ==========
+    # ========== TRANSACTIONS DATA ==========
     transaction_type = request.GET.get('transaction_type', '')
     transaction_status = request.GET.get('transaction_status', '')
     
@@ -1495,6 +1353,7 @@ def myadmin(request):
             'phone': u.profile.phone_number,
             'balance': float(u.wallet.balance) if hasattr(u, 'wallet') and u.wallet.balance else 0,
             'locked_balance': float(u.wallet.locked_balance) if hasattr(u, 'wallet') and u.wallet.locked_balance else 0,
+            'total_balance': float(u.wallet.balance + u.wallet.locked_balance) if hasattr(u, 'wallet') else 0,
             'phone_verified': u.profile.phone_verified,
             'id_verified': u.profile.id_verified,
             'is_banned': u.profile.is_banned,
@@ -1629,7 +1488,7 @@ def myadmin(request):
         'withdrawal_status_choices': [s[0] for s in WithdrawalRequest.WITHDRAWAL_STATUS],
         'current_withdrawal_status': withdrawal_status,
         
-        # Investments (NEW)
+        # Investments
         'investments_data': investments_data,
         'investments': json.dumps(investments_data),
         'investment_status_choices': [s[0] for s in Investment.INVESTMENT_STATUS],
@@ -1642,7 +1501,7 @@ def myadmin(request):
             'has_previous': investments_page.has_previous(),
         },
         
-        # Transactions (NEW)
+        # Transactions
         'transactions_data': transactions_data,
         'transactions': json.dumps(transactions_data),
         'transaction_type_choices': [s[0] for s in Transaction.TRANSACTION_TYPES],
@@ -1698,6 +1557,7 @@ def myadmin(request):
     }
     
     return render(request, 'admin.html', context)
+
 
 # ==================== ADMIN API ENDPOINTS ====================
 
@@ -1801,29 +1661,43 @@ def admin_api(request):
         user_id = request.POST.get('user_id')
         amount = request.POST.get('amount')
         description = request.POST.get('description', 'Admin adjustment')
+        adjust_type = request.POST.get('adjust_type', 'add')  # 'add' or 'subtract'
         
         try:
             amount = Decimal(amount)
+            if adjust_type == 'subtract':
+                amount = -amount
+                
             user = get_object_or_404(User, id=user_id)
             
             with transaction.atomic():
+                wallet = Wallet.objects.select_for_update().get(user=user)
+                
+                # Check if subtracting would make balance negative
+                if amount < 0 and wallet.balance < abs(amount):
+                    return JsonResponse({
+                        'success': False, 
+                        'error': f'Cannot subtract {abs(amount)} KSH. Available balance is only {wallet.balance} KSH'
+                    })
+                
                 trans = Transaction.objects.create(
-                    wallet=user.wallet,
+                    wallet=wallet,
                     transaction_type='ADJUSTMENT',
-                    amount=amount,
+                    amount=abs(amount),
                     description=description,
                     status='COMPLETED',
                     processed_by=request.user,
                     processed_at=timezone.now()
                 )
                 
-                user.wallet.balance += amount
-                user.wallet.save()
+                wallet.balance += amount
+                wallet.save()
             
             return JsonResponse({
                 'success': True,
-                'new_balance': float(user.wallet.balance),
-                'message': f'Added {amount} KSH to wallet'
+                'new_balance': float(wallet.balance),
+                'new_locked': float(wallet.locked_balance),
+                'message': f'{"Added" if amount > 0 else "Subtracted"} {abs(amount)} KSH to/from wallet'
             })
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
@@ -2101,7 +1975,7 @@ def admin_api(request):
     return JsonResponse({'error': f'Invalid action: {action}'}, status=400)
 
 
-# ==================== API VIEWS (AJAX) ====================
+# ==================== API VIEWS ====================
 
 @login_required(login_url='XMR:signupin')
 def api_wallet_balance(request):
@@ -2111,6 +1985,7 @@ def api_wallet_balance(request):
         'balance': float(wallet.balance),
         'locked': float(wallet.locked_balance),
         'available': float(wallet.available_balance()),
+        'total': float(wallet.balance + wallet.locked_balance),
     })
 
 
@@ -2228,12 +2103,7 @@ def check_expired_investments():
     count = 0
     for investment in expired:
         try:
-            investment.status = 'COMPLETED'
-            investment.save()
-            
-            wallet = investment.user.wallet
-            wallet.locked_balance -= (investment.amount * investment.remaining_payouts / investment.token.return_days)
-            wallet.save()
+            investment.complete_investment()  # This now returns principal to available balance
             count += 1
             
         except Exception as e:
@@ -2249,7 +2119,7 @@ def check_expired_investments():
     return count
 
 
-# ==================== CELERY TASK TRIGGERS (KEEP FOR BACKWARD COMPATIBILITY) ====================
+# ==================== ADMIN TASK VIEWS ====================
 
 @login_required(login_url='XMR:signupin')
 def admin_trigger_payout(request):
@@ -2258,7 +2128,7 @@ def admin_trigger_payout(request):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
     
     if request.method == 'POST':
-        # Process directly instead of using Celery
+        # Process directly
         processed, errors = process_daily_payouts()
         
         SystemLog.objects.create(
@@ -2297,25 +2167,11 @@ def admin_check_expired(request):
 
 
 @login_required(login_url='XMR:signupin')
-def admin_task_status(request, task_id):
-    """Check status of a task - simplified for non-Celery setup"""
-    if not request.user.is_staff:
-        return JsonResponse({'error': 'Unauthorized'}, status=403)
-    
-    return JsonResponse({
-        'task_id': task_id,
-        'status': 'Celery not used - payouts are processed on page load',
-        'note': 'This system uses automatic payouts on page visit instead of Celery'
-    })
-
-
-@login_required(login_url='XMR:signupin')
 def admin_payout_stats(request):
     """Get statistics about payouts"""
     if not request.user.is_staff:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
     
-    # Allow both GET and POST
     if request.method not in ['GET', 'POST']:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
@@ -2355,25 +2211,405 @@ def admin_payout_stats(request):
     })
 
 
-
-
 @login_required(login_url='XMR:signupin')
 @transaction.atomic
 def fix_all_wallets(request):
-    """Fix all wallets with negative available balance"""
+    """Fix all wallets with incorrect balances"""
     if not request.user.is_staff:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
     
-    
     if request.method not in ['GET', 'POST']:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-
     
     fixed_count = 0
     fixed_users = []
+    errors = []
+    
+    try:
+        for wallet in Wallet.objects.select_for_update().all():
+            # Calculate what balances SHOULD be based on transactions
+            total_deposits = Transaction.objects.filter(
+                wallet=wallet,
+                transaction_type='DEPOSIT',
+                status='COMPLETED'
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+            
+            total_withdrawals = Transaction.objects.filter(
+                wallet=wallet,
+                transaction_type='WITHDRAWAL',
+                status='COMPLETED'
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+            
+            total_profits = Transaction.objects.filter(
+                wallet=wallet,
+                transaction_type='PROFIT',
+                status='COMPLETED'
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+            
+            total_referral_bonuses = Transaction.objects.filter(
+                wallet=wallet,
+                transaction_type='REFERRAL_BONUS',
+                status='COMPLETED'
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+            
+            total_adjustments = Transaction.objects.filter(
+                wallet=wallet,
+                transaction_type='ADJUSTMENT',
+                status='COMPLETED'
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+            
+            # Calculate locked balance from active investments
+            active_investments = Investment.objects.filter(
+                user=wallet.user,
+                status='ACTIVE'
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+            
+            # Total earnings should be profits + referral bonuses
+            correct_total_earned = total_profits + total_referral_bonuses
+            
+            # Available balance should be: deposits + profits + referral_bonuses + adjustments - withdrawals
+            # Note: When investing, money moves from balance to locked_balance, so it's already accounted for
+            correct_balance = total_deposits + total_profits + total_referral_bonuses + total_adjustments - total_withdrawals
+            
+            # Track if anything changed
+            changes = {}
+            
+            if wallet.balance != correct_balance:
+                changes['balance'] = f"{wallet.balance} → {correct_balance}"
+                wallet.balance = correct_balance
+            
+            if wallet.locked_balance != active_investments:
+                changes['locked_balance'] = f"{wallet.locked_balance} → {active_investments}"
+                wallet.locked_balance = active_investments
+            
+            if wallet.total_earned != correct_total_earned:
+                changes['total_earned'] = f"{wallet.total_earned} → {correct_total_earned}"
+                wallet.total_earned = correct_total_earned
+            
+            if wallet.total_deposited != total_deposits:
+                changes['total_deposited'] = f"{wallet.total_deposited} → {total_deposits}"
+                wallet.total_deposited = total_deposits
+            
+            if wallet.total_withdrawn != total_withdrawals:
+                changes['total_withdrawn'] = f"{wallet.total_withdrawn} → {total_withdrawals}"
+                wallet.total_withdrawn = total_withdrawals
+            
+            if changes:
+                wallet.save()
+                fixed_count += 1
+                fixed_users.append({
+                    'username': wallet.user.username,
+                    'changes': changes
+                })
+                
+                SystemLog.objects.create(
+                    log_type='ADMIN_ACTION',
+                    user=request.user,
+                    action='FIXED_WALLET_BALANCE',
+                    description=f'Fixed wallet for {wallet.user.username}: {json.dumps(changes)}'
+                )
+                
+                logger.info(f"Fixed wallet for {wallet.user.username}: {changes}")
+        
+        # Also check for investments that might be stuck in incorrect state
+        stuck_investments = Investment.objects.filter(
+            status='ACTIVE',
+            remaining_payouts=0
+        )
+        for inv in stuck_investments:
+            inv.complete_investment()
+            logger.info(f"Completed stuck investment {inv.id} for user {inv.user.username}")
+        
+        # Check for investments that have passed end date but still active
+        expired_investments = Investment.objects.filter(
+            status='ACTIVE',
+            end_date__lt=timezone.now()
+        )
+        for inv in expired_investments:
+            inv.complete_investment()
+            logger.info(f"Completed expired investment {inv.id} for user {inv.user.username}")
+        
+        message = f'Fixed {fixed_count} wallets with incorrect balances'
+        if fixed_count > 0:
+            message += f': {", ".join([u["username"] for u in fixed_users])}'
+        
+        return JsonResponse({
+            'success': True,
+            'message': message,
+            'fixed_count': fixed_count,
+            'fixed_users': fixed_users,
+            'errors': errors
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in fix_all_wallets: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+# ==================== ADMIN INVESTMENT MANAGEMENT ====================
+
+@login_required(login_url='XMR:signupin')
+def admin_force_complete_investment(request, investment_id):
+    """Admin view to force complete an investment"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        investment = get_object_or_404(Investment, id=investment_id)
+        
+        with transaction.atomic():
+            # Complete the investment
+            investment.complete_investment()
+            
+            SystemLog.objects.create(
+                log_type='ADMIN_ACTION',
+                user=request.user,
+                action='FORCE_COMPLETE_INVESTMENT',
+                description=f'Force completed investment {investment.investment_id} for user {investment.user.username}'
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Investment {investment.investment_id} completed successfully',
+                'user': investment.user.username,
+                'amount': float(investment.amount)
+            })
+            
+    except Exception as e:
+        logger.error(f"Error force completing investment {investment_id}: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required(login_url='XMR:signupin')
+def admin_force_payout(request, investment_id):
+    """Admin view to force a single payout on an investment"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        investment = get_object_or_404(Investment, id=investment_id)
+        
+        with transaction.atomic():
+            success = investment.process_daily_payout()
+            
+            if success:
+                SystemLog.objects.create(
+                    log_type='ADMIN_ACTION',
+                    user=request.user,
+                    action='FORCE_PAYOUT',
+                    description=f'Force processed payout for investment {investment.investment_id}'
+                )
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Payout processed successfully',
+                    'remaining_payouts': investment.remaining_payouts,
+                    'total_paid': float(investment.total_paid)
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Could not process payout - investment may be completed or inactive'
+                }, status=400)
+            
+    except Exception as e:
+        logger.error(f"Error forcing payout for investment {investment_id}: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+# ==================== ADMIN USER MANAGEMENT ====================
+
+@login_required(login_url='XMR:signupin')
+def admin_user_detail(request, user_id):
+    """Admin view to see detailed user information"""
+    if not request.user.is_staff:
+        messages.error(request, 'You are not authorized to access this page.')
+        return redirect('XMR:account')
+    
+    user = get_object_or_404(User, id=user_id)
+    
+    # Get all user data
+    profile = user.profile
+    wallet = user.wallet
+    
+    # Get all transactions
+    transactions = Transaction.objects.filter(
+        wallet=wallet
+    ).select_related('investment', 'withdrawal').order_by('-created_at')[:100]
+    
+    # Get all investments
+    investments = Investment.objects.filter(
+        user=user
+    ).select_related('token').order_by('-created_at')
+    
+    # Get all deposits
+    deposits = MpesaPayment.objects.filter(
+        user=user
+    ).order_by('-created_at')
+    
+    # Get all withdrawals
+    withdrawals = WithdrawalRequest.objects.filter(
+        user=user
+    ).order_by('-created_at')
+    
+    # Calculate statistics
+    total_deposits = transactions.filter(
+        transaction_type='DEPOSIT',
+        status='COMPLETED'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    total_withdrawals = transactions.filter(
+        transaction_type='WITHDRAWAL',
+        status='COMPLETED'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    total_profits = transactions.filter(
+        transaction_type='PROFIT',
+        status='COMPLETED'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    total_referral_bonus = transactions.filter(
+        transaction_type='REFERRAL_BONUS',
+        status='COMPLETED'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    active_investments = investments.filter(status='ACTIVE')
+    total_invested = active_investments.aggregate(total=Sum('amount'))['total'] or 0
+    
+    context = {
+        'user': user,
+        'profile': profile,
+        'wallet': wallet,
+        'transactions': transactions,
+        'investments': investments,
+        'deposits': deposits,
+        'withdrawals': withdrawals,
+        'stats': {
+            'total_deposits': float(total_deposits),
+            'total_withdrawals': float(total_withdrawals),
+            'total_profits': float(total_profits),
+            'total_referral_bonus': float(total_referral_bonus),
+            'total_invested': float(total_invested),
+            'active_investments_count': active_investments.count(),
+            'total_investments_count': investments.count(),
+        }
+    }
+    
+    return render(request, 'admin_user_detail.html', context)
+
+
+# ==================== ADMIN SYSTEM MAINTENANCE ====================
+
+@login_required(login_url='XMR:signupin')
+def admin_system_status(request):
+    """Admin view to check system status"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        # Get system statistics
+        now = timezone.now()
+        last_hour = now - timedelta(hours=1)
+        last_day = now - timedelta(days=1)
+        
+        status = {
+            'timestamp': str(now),
+            'database': {
+                'users_total': User.objects.count(),
+                'users_active_last_hour': User.objects.filter(last_login__gte=last_hour).count(),
+                'users_active_last_day': User.objects.filter(last_login__gte=last_day).count(),
+            },
+            'wallets': {
+                'total_wallets': Wallet.objects.count(),
+                'total_available_balance': float(Wallet.objects.aggregate(total=Sum('balance'))['total'] or 0),
+                'total_locked_balance': float(Wallet.objects.aggregate(total=Sum('locked_balance'))['total'] or 0),
+                'wallets_with_negative': Wallet.objects.filter(balance__lt=0).count(),
+                'wallets_with_mismatch': check_for_wallet_mismatches(),
+            },
+            'investments': {
+                'active': Investment.objects.filter(status='ACTIVE').count(),
+                'completed': Investment.objects.filter(status='COMPLETED').count(),
+                'total_invested': float(Investment.objects.filter(status='ACTIVE').aggregate(total=Sum('amount'))['total'] or 0),
+                'due_for_payout': Investment.objects.filter(
+                    status='ACTIVE',
+                    remaining_payouts__gt=0
+                ).filter(
+                    Q(last_payout_date__isnull=True, created_at__lte=now - timedelta(hours=24)) |
+                    Q(last_payout_date__lte=now - timedelta(hours=24))
+                ).count(),
+                'overdue': Investment.objects.filter(
+                    status='ACTIVE',
+                    remaining_payouts__gt=0,
+                    last_payout_date__lt=now - timedelta(hours=25)
+                ).count(),
+            },
+            'transactions': {
+                'last_hour': Transaction.objects.filter(created_at__gte=last_hour).count(),
+                'last_day': Transaction.objects.filter(created_at__gte=last_day).count(),
+                'pending': Transaction.objects.filter(status='PENDING').count(),
+                'failed': Transaction.objects.filter(status='FAILED').count(),
+            },
+            'deposits': {
+                'pending': MpesaPayment.objects.filter(status='PENDING').count(),
+                'verified_today': MpesaPayment.objects.filter(
+                    status='VERIFIED',
+                    verified_at__date=now.date()
+                ).count(),
+            },
+            'withdrawals': {
+                'pending': WithdrawalRequest.objects.filter(status='PENDING').count(),
+                'processing': WithdrawalRequest.objects.filter(status='PROCESSING').count(),
+                'completed_today': WithdrawalRequest.objects.filter(
+                    status='COMPLETED',
+                    processed_at__date=now.date()
+                ).count(),
+            },
+            'kyc': {
+                'pending': UserProfile.objects.filter(
+                    Q(id_front_image__isnull=False) |
+                    Q(id_back_image__isnull=False) |
+                    Q(selfie_with_id__isnull=False)
+                ).filter(
+                    Q(phone_verified=False) | Q(id_verified=False)
+                ).count(),
+                'verified': UserProfile.objects.filter(phone_verified=True, id_verified=True).count(),
+            }
+        }
+        
+        return JsonResponse({'success': True, 'status': status})
+        
+    except Exception as e:
+        logger.error(f"Error getting system status: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+def check_for_wallet_mismatches():
+    """Helper function to check for wallet balance mismatches"""
+    mismatches = 0
     
     for wallet in Wallet.objects.all():
-        # Calculate what total balance SHOULD be
+        # Calculate expected balance
         total_deposits = Transaction.objects.filter(
             wallet=wallet,
             transaction_type='DEPOSIT',
@@ -2392,28 +2628,591 @@ def fix_all_wallets(request):
             status='COMPLETED'
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
         
-        # Correct total balance should be: deposits + profits - withdrawals
-        correct_balance = total_deposits + total_profits - total_withdrawals
+        total_referral = Transaction.objects.filter(
+            wallet=wallet,
+            transaction_type='REFERRAL_BONUS',
+            status='COMPLETED'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
         
-        # If current balance is wrong, fix it
-        if wallet.balance != correct_balance:
-            old_balance = wallet.balance
-            wallet.balance = correct_balance
-            wallet.save()
-            fixed_count += 1
-            fixed_users.append(f"{wallet.user.username}")
-            
-            SystemLog.objects.create(
-                log_type='ADMIN_ACTION',
-                user=request.user,
-                action='FIXED_WALLET_BALANCE',
-                description=f'Fixed wallet for {wallet.user.username}: {old_balance} → {correct_balance}'
+        expected_balance = total_deposits + total_profits + total_referral - total_withdrawals
+        
+        if wallet.balance != expected_balance:
+            mismatches += 1
+    
+    return mismatches
+
+
+# ==================== EXPORT FUNCTIONS ====================
+
+@login_required(login_url='XMR:signupin')
+def export_transactions_csv(request):
+    """Export transactions as CSV"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    import csv
+    from django.http import HttpResponse
+    
+    # Create the HttpResponse object with CSV header
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="transactions_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Transaction ID', 'User', 'Type', 'Amount', 'Status', 
+        'Description', 'Created At', 'Processed At', 'Processed By'
+    ])
+    
+    transactions = Transaction.objects.select_related(
+        'wallet__user', 'processed_by'
+    ).order_by('-created_at')[:5000]  # Limit to last 5000 for performance
+    
+    for t in transactions:
+        writer.writerow([
+            t.transaction_id,
+            t.wallet.user.username,
+            t.transaction_type,
+            float(t.amount),
+            t.status,
+            t.description,
+            t.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            t.processed_at.strftime('%Y-%m-%d %H:%M:%S') if t.processed_at else '',
+            t.processed_by.username if t.processed_by else ''
+        ])
+    
+    return response
+
+
+@login_required(login_url='XMR:signupin')
+def export_users_csv(request):
+    """Export users as CSV"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    import csv
+    from django.http import HttpResponse
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="users_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Username', 'Email', 'First Name', 'Last Name', 'Phone',
+        'Balance', 'Locked Balance', 'Total Deposited', 'Total Withdrawn',
+        'Total Earned', 'Phone Verified', 'ID Verified', 'Is Banned',
+        'Date Joined', 'Last Login', 'Referral Code', 'Referred By'
+    ])
+    
+    users = User.objects.select_related('profile', 'wallet').order_by('-date_joined')[:2000]
+    
+    for u in users:
+        writer.writerow([
+            u.username,
+            u.email,
+            u.first_name,
+            u.last_name,
+            u.profile.phone_number,
+            float(u.wallet.balance) if hasattr(u, 'wallet') else 0,
+            float(u.wallet.locked_balance) if hasattr(u, 'wallet') else 0,
+            float(u.wallet.total_deposited) if hasattr(u, 'wallet') else 0,
+            float(u.wallet.total_withdrawn) if hasattr(u, 'wallet') else 0,
+            float(u.wallet.total_earned) if hasattr(u, 'wallet') else 0,
+            'Yes' if u.profile.phone_verified else 'No',
+            'Yes' if u.profile.id_verified else 'No',
+            'Yes' if u.profile.is_banned else 'No',
+            u.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
+            u.last_login.strftime('%Y-%m-%d %H:%M:%S') if u.last_login else '',
+            u.profile.referral_code,
+            u.profile.referred_by.user.username if u.profile.referred_by else ''
+        ])
+    
+    return response
+
+
+# ==================== DEBUGGING AND TESTING ====================
+
+@login_required(login_url='XMR:signupin')
+def debug_wallet(request, user_id=None):
+    """Debug view to check wallet state (admin only)"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if user_id:
+        user = get_object_or_404(User, id=user_id)
+    else:
+        user = request.user
+    
+    wallet = user.wallet
+    
+    # Get all transactions
+    deposits = Transaction.objects.filter(
+        wallet=wallet,
+        transaction_type='DEPOSIT',
+        status='COMPLETED'
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    withdrawals = Transaction.objects.filter(
+        wallet=wallet,
+        transaction_type='WITHDRAWAL',
+        status='COMPLETED'
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    profits = Transaction.objects.filter(
+        wallet=wallet,
+        transaction_type='PROFIT',
+        status='COMPLETED'
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    referrals = Transaction.objects.filter(
+        wallet=wallet,
+        transaction_type='REFERRAL_BONUS',
+        status='COMPLETED'
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    adjustments = Transaction.objects.filter(
+        wallet=wallet,
+        transaction_type='ADJUSTMENT',
+        status='COMPLETED'
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    # Active investments
+    active_investments = Investment.objects.filter(
+        user=user,
+        status='ACTIVE'
+    )
+    
+    total_locked = active_investments.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    # Expected calculations
+    expected_balance = deposits + profits + referrals + adjustments - withdrawals
+    expected_total_earned = profits + referrals
+    
+    debug_info = {
+        'user': user.username,
+        'wallet_state': {
+            'current_balance': float(wallet.balance),
+            'current_locked': float(wallet.locked_balance),
+            'current_total_earned': float(wallet.total_earned),
+            'current_total_deposited': float(wallet.total_deposited),
+            'current_total_withdrawn': float(wallet.total_withdrawn),
+        },
+        'transaction_totals': {
+            'deposits': float(deposits),
+            'withdrawals': float(withdrawals),
+            'profits': float(profits),
+            'referrals': float(referrals),
+            'adjustments': float(adjustments),
+        },
+        'expected_values': {
+            'expected_balance': float(expected_balance),
+            'expected_locked': float(total_locked),
+            'expected_total_earned': float(expected_total_earned),
+            'balance_match': wallet.balance == expected_balance,
+            'locked_match': wallet.locked_balance == total_locked,
+            'earned_match': wallet.total_earned == expected_total_earned,
+        },
+        'active_investments': [
+            {
+                'id': inv.id,
+                'token': inv.token.name,
+                'amount': float(inv.amount),
+                'remaining_payouts': inv.remaining_payouts,
+                'total_paid': float(inv.total_paid),
+                'start_date': str(inv.start_date),
+                'end_date': str(inv.end_date),
+                'last_payout': str(inv.last_payout_date) if inv.last_payout_date else None,
+            }
+            for inv in active_investments
+        ],
+        'recent_transactions': [
+            {
+                'id': t.id,
+                'type': t.transaction_type,
+                'amount': float(t.amount),
+                'status': t.status,
+                'created': str(t.created_at),
+                'description': t.description,
+            }
+            for t in Transaction.objects.filter(wallet=wallet).order_by('-created_at')[:20]
+        ]
+    }
+    
+    return JsonResponse(debug_info)
+
+
+# ==================== ERROR HANDLERS ====================
+
+def handler404(request, exception):
+    """Custom 404 error handler"""
+    return render(request, '404.html', status=404)
+
+
+def handler500(request):
+    """Custom 500 error handler"""
+    return render(request, '500.html', status=500)
+
+
+def handler403(request, exception):
+    """Custom 403 error handler"""
+    return render(request, '403.html', status=403)
+
+
+def handler400(request, exception):
+    """Custom 400 error handler"""
+    return render(request, '400.html', status=400)
+
+
+# ==================== HEALTH CHECK ====================
+
+def health_check(request):
+    """
+    Simple health check endpoint for monitoring
+    Returns 200 if system is operational
+    """
+    try:
+        # Check database connectivity
+        User.objects.exists()
+        
+        # Check if critical models are accessible
+        Wallet.objects.exists()
+        
+        return JsonResponse({
+            'status': 'healthy',
+            'timestamp': str(timezone.now()),
+            'database': 'connected'
+        })
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'status': 'unhealthy',
+            'timestamp': str(timezone.now()),
+            'error': str(e)
+        }, status=500)
+
+
+# ==================== INITIAL SETUP ====================
+
+def initialize_system(request):
+    """
+    Initialize system with default data
+    This should be run once during deployment
+    """
+    # Only allow in debug mode or via specific condition
+    if not settings.DEBUG:
+        return JsonResponse({'error': 'Not allowed in production'}, status=403)
+    
+    try:
+        # Create default tokens if they don't exist
+        default_tokens = [
+            {
+                'name': 'XMR-1',
+                'display_name': 'Starter',
+                'token_number': 1,
+                'minimum_investment': 800,
+                'daily_return': 100,
+                'return_days': 12,
+                'status': 'ACTIVE',
+                'description': 'Perfect for beginners. Low entry, consistent returns.',
+                'icon': 'fa-seedling',
+                'color': 'success',
+            },
+            {
+                'name': 'XMR-2',
+                'display_name': 'Bronze',
+                'token_number': 2,
+                'minimum_investment': 2000,
+                'daily_return': 280,
+                'return_days': 12,
+                'status': 'ACTIVE',
+                'description': 'Solid returns with moderate investment.',
+                'icon': 'fa-medal',
+                'color': 'bronze',
+            },
+            {
+                'name': 'XMR-3',
+                'display_name': 'Silver',
+                'token_number': 3,
+                'minimum_investment': 5000,
+                'daily_return': 750,
+                'return_days': 12,
+                'status': 'ACTIVE',
+                'description': 'Premium returns for serious investors.',
+                'icon': 'fa-gem',
+                'color': 'secondary',
+            },
+            {
+                'name': 'XMR-4',
+                'display_name': 'Gold',
+                'token_number': 4,
+                'minimum_investment': 10000,
+                'daily_return': 1600,
+                'return_days': 12,
+                'status': 'ACTIVE',
+                'description': 'High-tier investment with maximum returns.',
+                'icon': 'fa-crown',
+                'color': 'warning',
+            },
+        ]
+        
+        created_tokens = []
+        for token_data in default_tokens:
+            token, created = Token.objects.get_or_create(
+                name=token_data['name'],
+                defaults=token_data
             )
+            if created:
+                created_tokens.append(token.name)
+        
+        # Create default system configs
+        default_configs = {
+            'min_deposit': 800,
+            'min_withdrawal': 200,
+            'withdrawal_tax': 5,
+            'referral_commission': 5,
+            'mpesa_paybill': '123456',
+            'mpesa_account': 'INVEST',
+            'site_name': 'XMR Investments',
+            'support_email': 'support@example.com',
+            'support_phone': '0712345678',
+        }
+        
+        created_configs = []
+        for key, value in default_configs.items():
+            config, created = SystemConfig.objects.get_or_create(
+                key=key,
+                defaults={'value': value, 'description': f'Default {key}'}
+            )
+            if created:
+                created_configs.append(key)
+        
+        # Create superuser if none exists
+        if not User.objects.filter(is_superuser=True).exists():
+            User.objects.create_superuser(
+                username='admin',
+                email='admin@example.com',
+                password='Admin123!'
+            )
+            created_admin = True
+        else:
+            created_admin = False
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'System initialized successfully',
+            'created_tokens': created_tokens,
+            'created_configs': created_configs,
+            'created_admin': created_admin
+        })
+        
+    except Exception as e:
+        logger.error(f"System initialization error: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+
+
+
+@login_required(login_url='XMR:signupin')
+def export_deposits_csv(request):
+    """Export deposits as CSV"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
     
-    return JsonResponse({
-        'success': True,
-        'message': f'Fixed {fixed_count} wallets with incorrect balances',
-        'fixed_count': fixed_count,
-        'users': fixed_users
-    })
+    import csv
+    from django.http import HttpResponse
     
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="deposits_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['ID', 'User', 'Amount', 'Phone', 'M-Pesa Code', 'Status', 'Created At'])
+    
+    deposits = MpesaPayment.objects.select_related('user').order_by('-created_at')[:5000]
+    
+    for d in deposits:
+        writer.writerow([
+            d.id,
+            d.user.username,
+            float(d.amount),
+            d.phone_number,
+            d.mpesa_code or '',
+            d.status,
+            d.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+    
+    return response
+
+
+@login_required(login_url='XMR:signupin')
+def export_withdrawals_csv(request):
+    """Export withdrawals as CSV"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    import csv
+    from django.http import HttpResponse
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="withdrawals_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Request ID', 'User', 'Amount', 'Net Amount', 'Tax', 'Method', 'Status', 'Created At'])
+    
+    withdrawals = WithdrawalRequest.objects.select_related('user').order_by('-created_at')[:5000]
+    
+    for w in withdrawals:
+        writer.writerow([
+            w.request_id,
+            w.user.username,
+            float(w.amount),
+            float(w.net_amount),
+            float(w.tax_amount),
+            w.payment_method,
+            w.status,
+            w.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+    
+    return response
+
+
+@login_required(login_url='XMR:signupin')
+def export_investments_csv(request):
+    """Export investments as CSV"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    import csv
+    from django.http import HttpResponse
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="investments_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Investment ID', 'User', 'Token', 'Amount', 'Daily Return', 'Total Paid', 'Status', 'Start Date', 'End Date'])
+    
+    investments = Investment.objects.select_related('user', 'token').order_by('-created_at')[:5000]
+    
+    for inv in investments:
+        writer.writerow([
+            inv.investment_id,
+            inv.user.username,
+            inv.token.name,
+            float(inv.amount),
+            float(inv.daily_return),
+            float(inv.total_paid),
+            inv.status,
+            inv.start_date.strftime('%Y-%m-%d %H:%M:%S'),
+            inv.end_date.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+    
+    return response
+
+
+@login_required(login_url='XMR:signupin')
+def export_tokens_csv(request):
+    """Export tokens as CSV"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    import csv
+    from django.http import HttpResponse
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="tokens_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Token Number', 'Name', 'Display Name', 'Min Investment', 'Daily Return', 'Return Days', 'Status', 'Purchased Count'])
+    
+    tokens = Token.objects.all().order_by('token_number')
+    
+    for t in tokens:
+        writer.writerow([
+            t.token_number,
+            t.name,
+            t.display_name,
+            float(t.minimum_investment) if t.minimum_investment else 0,
+            float(t.daily_return) if t.daily_return else 0,
+            t.return_days,
+            t.status,
+            t.purchased_count
+        ])
+    
+    return response
+
+
+@login_required(login_url='XMR:signupin')
+def export_kyc_csv(request):
+    """Export KYC requests as CSV"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    import csv
+    from django.http import HttpResponse
+    from django.db.models import Q
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="kyc_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['User', 'Full Name', 'Phone', 'Phone Verified', 'ID Verified', 'Has ID Front', 'Has ID Back', 'Has Selfie', 'Submitted At'])
+    
+    kyc_requests = UserProfile.objects.filter(
+        Q(id_front_image__isnull=False) |
+        Q(id_back_image__isnull=False) |
+        Q(selfie_with_id__isnull=False)
+    ).select_related('user').order_by('-updated_at')
+    
+    for k in kyc_requests:
+        writer.writerow([
+            k.user.username,
+            k.national_id_name or f"{k.user.first_name} {k.user.last_name}",
+            k.phone_number,
+            'Yes' if k.phone_verified else 'No',
+            'Yes' if k.id_verified else 'No',
+            'Yes' if k.id_front_image else 'No',
+            'Yes' if k.id_back_image else 'No',
+            'Yes' if k.selfie_with_id else 'No',
+            k.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+    
+    return response
+
+
+@login_required(login_url='XMR:signupin')
+def export_logs_csv(request):
+    """Export system logs as CSV"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    import csv
+    from django.http import HttpResponse
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="logs_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Time', 'Type', 'User', 'Action', 'Description', 'IP Address'])
+    
+    logs = SystemLog.objects.select_related('user').order_by('-created_at')[:5000]
+    
+    for log in logs:
+        writer.writerow([
+            log.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            log.log_type,
+            log.user.username if log.user else 'System',
+            log.action,
+            log.description,
+            log.ip_address or ''
+        ])
+    
+    return response
+
+
+
+
+
+
+from django.conf import settings
