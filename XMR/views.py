@@ -3215,4 +3215,156 @@ def export_logs_csv(request):
 
 
 
+@login_required(login_url='XMR:signupin')
+def check_investment_payouts_api(request, investment_id):
+    """API endpoint to check missed payouts for an investment"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        investment = Investment.objects.get(id=investment_id)
+        
+        # Calculate missed payouts
+        now = timezone.now()
+        missed = calculate_missed_payouts(investment, now)
+        
+        # Process them if requested
+        if request.POST.get('process', 'false') == 'true':
+            processed = 0
+            for i in range(missed):
+                if investment.process_daily_payout():
+                    processed += 1
+                else:
+                    break
+            
+            return JsonResponse({
+                'success': True,
+                'missed': missed,
+                'processed': processed,
+                'message': f'Processed {processed} of {missed} missed payouts'
+            })
+        else:
+            return JsonResponse({
+                'success': True,
+                'missed': missed,
+                'message': f'Found {missed} missed payouts'
+            })
+            
+    except Investment.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Investment not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required(login_url='XMR:signupin')
+def process_payout_api(request, investment_id):
+    """API endpoint to process a single payout"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        investment = Investment.objects.get(id=investment_id)
+        
+        with transaction.atomic():
+            success = investment.process_daily_payout()
+            
+            if success:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Payout processed successfully',
+                    'remaining_payouts': investment.remaining_payouts,
+                    'total_paid': float(investment.total_paid)
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Could not process payout - investment may be completed or inactive'
+                }, status=400)
+                
+    except Investment.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Investment not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required(login_url='XMR:signupin')
+def get_pending_payouts(request):
+    """Get list of investments due for payout"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    now = timezone.now()
+    
+    # Find investments due for payout
+    due_investments = Investment.objects.filter(
+        status='ACTIVE',
+        remaining_payouts__gt=0
+    ).filter(
+        Q(last_payout_date__isnull=True, created_at__lte=now - timedelta(hours=24)) |
+        Q(last_payout_date__lte=now - timedelta(hours=24))
+    ).select_related('user', 'token')[:100]
+    
+    pending_payouts = []
+    for inv in due_investments:
+        # Calculate how many hours since last payout
+        if inv.last_payout_date:
+            hours_since = (now - inv.last_payout_date).total_seconds() / 3600
+            due_since = f"{int(hours_since)} hours ago"
+        else:
+            hours_since = (now - inv.created_at).total_seconds() / 3600
+            due_since = f"{int(hours_since)} hours ago (never paid)"
+        
+        pending_payouts.append({
+            'id': inv.id,
+            'investment_id': inv.investment_id,
+            'user': inv.user.username,
+            'user_id': inv.user.id,
+            'token': inv.token.name,
+            'amount': float(inv.daily_return),
+            'last_payout': inv.last_payout_date.strftime('%Y-%m-%d %H:%M') if inv.last_payout_date else None,
+            'due_since': due_since,
+            'status': 'due' if hours_since > 24 else 'pending'
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'pending_payouts': pending_payouts,
+        'count': len(pending_payouts)
+    })
+
+
+@login_required(login_url='XMR:signupin')
+def get_recent_payouts(request):
+    """Get recent payout transactions"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    recent = Transaction.objects.filter(
+        transaction_type='PROFIT',
+        status='COMPLETED'
+    ).select_related('wallet__user', 'investment').order_by('-created_at')[:50]
+    
+    payouts = []
+    for t in recent:
+        payouts.append({
+            'id': t.id,
+            'created_at': t.created_at.strftime('%Y-%m-%d %H:%M'),
+            'user': t.wallet.user.username,
+            'user_id': t.wallet.user.id,
+            'investment_id': t.investment.investment_id if t.investment else None,
+            'amount': float(t.amount),
+            'description': t.description
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'recent_payouts': payouts
+    })
+
+
+
+
 from django.conf import settings

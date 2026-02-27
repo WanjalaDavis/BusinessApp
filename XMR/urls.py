@@ -120,6 +120,20 @@ urlpatterns += [
              template_name='password_reset_complete.html'
          ),
          name='password_reset_complete'),
+
+       
+    path('manage/api/check-investment-payouts/<int:investment_id>/', 
+        views.check_investment_payouts_api, 
+        name='check_investment_payouts'),
+    path('manage/api/process-payout/<int:investment_id>/', 
+        views.process_payout_api, 
+        name='process_payout_api'),
+    path('manage/api/pending-payouts/', 
+        views.get_pending_payouts, 
+        name='get_pending_payouts'),
+    path('manage/api/recent-payouts/', 
+        views.get_recent_payouts, 
+        name='get_recent_payouts'),
 ]
 
 # ==================== SERVE MEDIA FILES IN DEVELOPMENT ====================

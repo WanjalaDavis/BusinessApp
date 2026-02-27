@@ -1,24 +1,28 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Monero . Investment Marketplace</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monero · Investment Hub</title>
     
-    <!-- Bootstrap 5.3 + Icons -->
+    <!-- Bootstrap 5.3 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
     
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- AOS Animation Library -->
+    <!-- Chart.js for beautiful graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- AOS Animation -->
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    
     <style>
-        /* ===== RESET & BASE ===== */
+        /* ===== RESET & VARIABLES ===== */
         * {
             margin: 0;
             padding: 0;
@@ -29,7 +33,7 @@
             font-family: 'Inter', sans-serif;
             background: var(--bg-gradient);
             min-height: 100vh;
-            overflow-x: hidden;
+            color: var(--text-primary);
             position: relative;
         }
 
@@ -41,9 +45,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: radial-gradient(circle at 20% 30%, rgba(241, 90, 36, 0.03) 0%, transparent 30%),
-                        radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.03) 0%, transparent 30%),
-                        radial-gradient(circle at 40% 80%, rgba(59, 130, 246, 0.03) 0%, transparent 30%);
+            background: radial-gradient(circle at 20% 30%, rgba(241, 90, 36, 0.05) 0%, transparent 30%),
+                        radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.05) 0%, transparent 30%),
+                        radial-gradient(circle at 40% 80%, rgba(59, 130, 246, 0.05) 0%, transparent 30%);
             pointer-events: none;
             z-index: -1;
             animation: float 20s ease-in-out infinite;
@@ -58,10 +62,10 @@
 
         :root[data-bs-theme="light"] {
             --bg-gradient: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-            --card-bg: rgba(255, 255, 255, 0.8);
+            --card-bg: rgba(255, 255, 255, 0.9);
             --card-hover: rgba(255, 255, 255, 0.95);
             --sidebar-hover: rgba(0, 0, 0, 0.03);
-            --border-color: rgba(0, 0, 0, 0.06);
+            --border-color: rgba(0, 0, 0, 0.08);
             --text-primary: #111827;
             --text-secondary: #4b5563;
             --text-muted: #6b7280;
@@ -71,6 +75,7 @@
             --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
             --accent-primary: #f15a24;
             --accent-primary-light: #ff8c5a;
+            --accent-primary-dark: #d94d1a;
             --accent-success: #10b981;
             --accent-warning: #f59e0b;
             --accent-danger: #ef4444;
@@ -80,10 +85,10 @@
 
         :root[data-bs-theme="dark"] {
             --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            --card-bg: rgba(30, 41, 59, 0.8);
+            --card-bg: rgba(30, 41, 59, 0.9);
             --card-hover: rgba(30, 41, 59, 0.95);
             --sidebar-hover: rgba(255, 255, 255, 0.03);
-            --border-color: rgba(255, 255, 255, 0.06);
+            --border-color: rgba(255, 255, 255, 0.08);
             --text-primary: #f1f5f9;
             --text-secondary: #cbd5e1;
             --text-muted: #94a3b8;
@@ -93,11 +98,32 @@
             --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
             --accent-primary: #f97316;
             --accent-primary-light: #fb923c;
+            --accent-primary-dark: #ea580c;
             --accent-success: #22c55e;
             --accent-warning: #eab308;
             --accent-danger: #ef4444;
             --accent-info: #3b82f6;
             --accent-purple: #a78bfa;
+        }
+
+        /* ===== CUSTOM SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--sidebar-hover);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-primary-dark);
         }
 
         /* ===== NAVBAR ===== */
@@ -116,16 +142,17 @@
         .brand-text {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 800;
-            font-size: 1.8rem;
+            font-size: 2rem;
             background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
         }
 
         .nav-link-custom {
             color: var(--text-secondary);
             font-weight: 500;
-            padding: 0.5rem 1rem !important;
+            padding: 0.6rem 1.2rem !important;
             border-radius: 12px;
             transition: all 0.3s ease;
             text-decoration: none;
@@ -137,15 +164,15 @@
         }
 
         .nav-link-custom.active {
-            color: var(--accent-primary);
-            background: var(--sidebar-hover);
-            border-bottom: 2px solid var(--accent-primary);
+            color: white;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-dark));
+            box-shadow: 0 10px 20px -10px var(--accent-primary);
         }
 
         .theme-toggle {
-            width: 44px;
-            height: 44px;
-            border-radius: 14px;
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
             background: var(--sidebar-hover);
             border: 1px solid var(--border-color);
             color: var(--text-primary);
@@ -157,15 +184,16 @@
         }
 
         .theme-toggle:hover {
-            border-color: var(--accent-primary);
+            background: var(--accent-primary);
+            color: white;
             transform: rotate(15deg);
         }
 
         .user-avatar {
-            width: 44px;
-            height: 44px;
+            width: 45px;
+            height: 45px;
             background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
-            border-radius: 14px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -184,14 +212,14 @@
 
         /* ===== MAIN CONTENT ===== */
         .main-content {
-            max-width: 1400px;
+            max-width: 1440px;
             margin: 2rem auto;
             padding: 0 2rem;
         }
 
         /* ===== HERO SECTION ===== */
         .hero-section {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-dark));
             border-radius: 40px;
             padding: 3rem;
             margin-bottom: 3rem;
@@ -201,17 +229,34 @@
             box-shadow: var(--shadow-xl);
         }
 
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+
         .hero-title {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-size: clamp(2.5rem, 5vw, 4rem);
             font-weight: 800;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             position: relative;
             z-index: 1;
         }
 
         .hero-subtitle {
-            font-size: clamp(0.9rem, 2vw, 1.2rem);
+            font-size: 1.2rem;
             opacity: 0.9;
             max-width: 600px;
             margin-bottom: 2rem;
@@ -223,8 +268,16 @@
             flex-wrap: wrap;
         }
 
+        .hero-stat-item {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
         .hero-stat-value {
-            font-size: clamp(1.5rem, 3vw, 2rem);
+            font-size: 2rem;
             font-weight: 700;
             font-family: 'Space Grotesk', sans-serif;
         }
@@ -234,10 +287,46 @@
             opacity: 0.8;
         }
 
+        /* ===== CHARTS SECTION ===== */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .chart-header h5 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .chart-container {
+            height: 250px;
+            position: relative;
+        }
+
         /* ===== STATS GRID ===== */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
@@ -249,29 +338,59 @@
             border-radius: 24px;
             padding: 1.5rem;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-success));
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
         }
 
         .stat-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 16px;
+            width: 50px;
+            height: 50px;
             background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-size: 1.5rem;
-            margin-bottom: 1rem;
+        }
+
+        .stat-trend {
+            color: var(--accent-success);
+            font-size: 0.9rem;
+            font-weight: 600;
         }
 
         .stat-value {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 700;
             color: var(--text-primary);
             line-height: 1.2;
@@ -279,20 +398,24 @@
 
         .stat-label {
             color: var(--text-muted);
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        .stat-note {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-top: 0.25rem;
+        .stat-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
         }
 
         /* ===== BALANCE CARD ===== */
         .balance-card {
-            background: var(--card-bg);
+            background: linear-gradient(135deg, var(--card-bg), var(--card-hover));
             backdrop-filter: blur(12px);
             border: 1px solid var(--border-color);
             border-radius: 30px;
@@ -311,9 +434,9 @@
 
         .balance-amount {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: clamp(2rem, 4vw, 3rem);
+            font-size: clamp(2.5rem, 4vw, 3.5rem);
             font-weight: 800;
-            color: var(--text-primary);
+            color: var(--accent-primary);
             line-height: 1.2;
             margin-bottom: 0.5rem;
         }
@@ -327,15 +450,13 @@
         .balance-actions {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.5rem;
+            gap: 1rem;
+            margin-top: 1.5rem;
         }
 
         .btn-balance {
-            background: var(--sidebar-hover);
-            border: 1px solid var(--border-color);
+            padding: 1rem 2rem;
             border-radius: 16px;
-            padding: 0.8rem 1.5rem;
-            color: var(--text-primary);
             font-weight: 600;
             display: inline-flex;
             align-items: center;
@@ -344,32 +465,54 @@
             text-decoration: none;
         }
 
-        .btn-balance:hover {
+        .btn-balance.primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-dark));
+            color: white;
+        }
+
+        .btn-balance.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 30px -10px var(--accent-primary);
+        }
+
+        .btn-balance.secondary {
+            background: var(--sidebar-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-balance.secondary:hover {
             background: var(--accent-primary);
             color: white;
-            transform: translateY(-2px);
+            border-color: transparent;
         }
 
-        /* ===== FILTER SECTION ===== */
-        .filter-section {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color);
-            border-radius: 30px;
-            padding: 1.5rem;
+        /* ===== MARKETPLACE SECTION ===== */
+        .marketplace-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
-        .filter-tabs {
+        .marketplace-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .filter-group {
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
-            margin-bottom: 1rem;
         }
 
-        .filter-tab {
-            padding: 0.6rem 1.5rem;
-            border-radius: 30px;
+        .filter-btn {
+            padding: 0.7rem 1.5rem;
+            border-radius: 12px;
             background: var(--sidebar-hover);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
@@ -378,18 +521,19 @@
             transition: all 0.3s ease;
         }
 
-        .filter-tab:hover,
-        .filter-tab.active {
-            background: var(--accent-primary);
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-dark));
             color: white;
             border-color: transparent;
         }
 
-        .filter-search {
+        .search-box {
             position: relative;
+            width: 300px;
         }
 
-        .filter-search i {
+        .search-box i {
             position: absolute;
             left: 1rem;
             top: 50%;
@@ -397,16 +541,16 @@
             color: var(--text-muted);
         }
 
-        .filter-search input {
+        .search-box input {
             width: 100%;
-            padding: 0.8rem 1rem 0.8rem 2.5rem;
+            padding: 0.7rem 1rem 0.7rem 2.5rem;
             background: var(--sidebar-hover);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
+            border-radius: 12px;
             color: var(--text-primary);
         }
 
-        .filter-search input:focus {
+        .search-box input:focus {
             outline: none;
             border-color: var(--accent-primary);
         }
@@ -416,7 +560,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 1.5rem;
-            margin-bottom: 2rem;
+            margin-bottom: 3rem;
         }
 
         .token-card {
@@ -427,39 +571,58 @@
             padding: 2rem;
             transition: all 0.4s ease;
             position: relative;
-            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .token-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-success));
+            transform: translateX(-100%);
+            transition: transform 0.4s ease;
         }
 
         .token-card:hover {
             transform: translateY(-10px);
             box-shadow: var(--shadow-xl);
-            background: var(--card-hover);
+        }
+
+        .token-card:hover::before {
+            transform: translateX(0);
         }
 
         .token-badge {
             position: absolute;
             top: 1.5rem;
             right: 1.5rem;
-            padding: 0.4rem 1rem;
+            padding: 0.5rem 1.2rem;
             border-radius: 30px;
             font-size: 0.75rem;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .token-badge.active {
             background: rgba(16, 185, 129, 0.15);
             color: var(--accent-success);
+            border: 1px solid var(--accent-success);
         }
 
-        .token-badge.coming-soon {
+        .token-badge.coming {
             background: rgba(245, 158, 11, 0.15);
             color: var(--accent-warning);
+            border: 1px solid var(--accent-warning);
         }
 
-        .token-badge.sold-out {
+        .token-badge.sold {
             background: rgba(239, 68, 68, 0.15);
             color: var(--accent-danger);
+            border: 1px solid var(--accent-danger);
         }
 
         .token-icon {
@@ -489,7 +652,7 @@
             margin-bottom: 1.5rem;
         }
 
-        .token-details {
+        .token-metrics {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
@@ -499,62 +662,56 @@
             border-bottom: 1px solid var(--border-color);
         }
 
-        .token-detail-item {
+        .metric {
             display: flex;
             flex-direction: column;
         }
 
-        .token-detail-label {
+        .metric-label {
             color: var(--text-muted);
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
             margin-bottom: 0.3rem;
         }
 
-        .token-detail-value {
+        .metric-value {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 700;
-            color: var(--text-primary);
         }
 
-        .token-detail-value small {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            font-weight: 400;
-        }
-
-        .token-detail-value.highlight {
+        .metric-value.primary {
             color: var(--accent-primary);
         }
 
-        .token-stats {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
+        .metric-value.success {
+            color: var(--accent-success);
         }
 
         .token-progress {
-            flex: 1;
-            margin-right: 1rem;
+            margin-bottom: 1.5rem;
         }
 
-        .progress {
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar-bg {
             height: 8px;
-            background: var(--border-color);
+            background: var(--sidebar-hover);
             border-radius: 10px;
             overflow: hidden;
         }
 
-        .progress-bar {
-            background: linear-gradient(90deg, var(--accent-success), var(--accent-primary));
-        }
-
-        .token-availability {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-secondary);
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-success));
+            border-radius: 10px;
+            transition: width 0.3s ease;
         }
 
         .token-footer {
@@ -563,53 +720,48 @@
             align-items: center;
         }
 
-        .token-roi {
+        .roi-badge {
             background: var(--sidebar-hover);
             padding: 0.5rem 1rem;
-            border-radius: 16px;
+            border-radius: 12px;
             font-weight: 600;
             color: var(--accent-success);
         }
 
-        .btn-invest {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+        .invest-btn {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-dark));
             color: white;
             border: none;
-            padding: 0.8rem 2rem;
-            border-radius: 16px;
+            padding: 0.8rem 1.8rem;
+            border-radius: 14px;
             font-weight: 600;
-            display: inline-flex;
+            display: flex;
             align-items: center;
             gap: 0.5rem;
-            transition: all 0.3s ease;
             cursor: pointer;
-            text-decoration: none;
+            transition: all 0.3s ease;
         }
 
-        .btn-invest:hover {
+        .invest-btn:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 20px 30px -10px var(--accent-primary);
+            box-shadow: 0 15px 25px -10px var(--accent-primary);
         }
 
-        .btn-invest:disabled {
+        .invest-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             background: var(--text-muted);
         }
 
-        .btn-invest:disabled:hover {
-            transform: none;
-            box-shadow: none;
-        }
-
-        /* ===== INVESTMENTS SECTIONS ===== */
-        .investments-section {
+        /* ===== PORTFOLIO SECTIONS ===== */
+        .portfolio-section {
             background: var(--card-bg);
             backdrop-filter: blur(12px);
             border: 1px solid var(--border-color);
             border-radius: 30px;
             padding: 2rem;
             margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
         }
 
         .section-header {
@@ -623,6 +775,7 @@
 
         .section-header h3 {
             font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.8rem;
             font-weight: 700;
             color: var(--text-primary);
             display: flex;
@@ -632,24 +785,29 @@
 
         .section-header h3 i {
             color: var(--accent-primary);
-            font-size: 1.8rem;
         }
 
         .section-badge {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-dark));
             color: white;
             padding: 0.5rem 1.5rem;
             border-radius: 30px;
             font-weight: 600;
         }
 
-        .investments-table {
+        /* ===== BEAUTIFUL TABLES ===== */
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 20px;
+        }
+
+        .modern-table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0 10px;
         }
 
-        .investments-table thead th {
+        .modern-table thead th {
             padding: 1rem 1.5rem;
             font-weight: 600;
             font-size: 0.85rem;
@@ -659,59 +817,106 @@
             white-space: nowrap;
         }
 
-        .investments-table tbody tr {
+        .modern-table tbody tr {
             background: var(--sidebar-hover);
             border-radius: 16px;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
 
-        .investments-table tbody tr:hover {
+        .modern-table tbody tr:hover {
             transform: scale(1.01);
             box-shadow: var(--shadow-lg);
+            background: var(--card-hover);
         }
 
-        .investments-table td {
+        .modern-table td {
             padding: 1.2rem 1.5rem;
             color: var(--text-primary);
             white-space: nowrap;
         }
 
-        .investments-table td:first-child {
+        .modern-table td:first-child {
             border-top-left-radius: 16px;
             border-bottom-left-radius: 16px;
         }
 
-        .investments-table td:last-child {
+        .modern-table td:last-child {
             border-top-right-radius: 16px;
             border-bottom-right-radius: 16px;
         }
 
-        .badge-status {
-            padding: 0.4rem 1rem;
+        .token-cell {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .token-avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-light));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .status-badge {
+            padding: 0.4rem 1.2rem;
             border-radius: 30px;
             font-size: 0.75rem;
             font-weight: 600;
-            display: inline-block;
-            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
         }
 
-        .badge-status.active {
+        .status-badge.active {
             background: rgba(16, 185, 129, 0.15);
             color: var(--accent-success);
         }
 
-        .badge-status.completed {
-            background: rgba(59, 130, 246, 0.15);
+        .status-badge.completed {
+            background: rgba(99, 102, 241, 0.15);
             color: var(--accent-info);
         }
 
-        .badge-status.pending {
+        .status-badge.pending {
             background: rgba(245, 158, 11, 0.15);
             color: var(--accent-warning);
         }
 
-        .progress-cell {
-            min-width: 150px;
+        .progress-bar-sm {
+            width: 100px;
+            height: 6px;
+            background: var(--sidebar-hover);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill-sm {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-success));
+            border-radius: 10px;
+        }
+
+        .countdown-timer {
+            font-family: 'Space Grotesk', monospace;
+            font-weight: 600;
+            background: var(--sidebar-hover);
+            padding: 0.3rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        .countdown-urgent {
+            color: var(--accent-danger);
+        }
+
+        .countdown-normal {
+            color: var(--accent-success);
         }
 
         .amount-positive {
@@ -742,6 +947,71 @@
             margin-bottom: 0.5rem;
         }
 
+        /* ===== QUICK STATS CARD ===== */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .quick-stat {
+            text-align: center;
+            padding: 1rem;
+            background: var(--sidebar-hover);
+            border-radius: 16px;
+        }
+
+        .quick-stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .quick-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        /* ===== MODAL STYLES ===== */
+        .modal-content {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.5rem 2rem;
+        }
+
+        .modal-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border-color);
+            padding: 1.5rem 2rem;
+        }
+
+        .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        .investment-summary {
+            background: var(--sidebar-hover);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
         /* ===== TOAST NOTIFICATIONS ===== */
         .toast-container {
             position: fixed;
@@ -756,8 +1026,7 @@
             border: 1px solid var(--border-color);
             border-radius: 16px;
             margin-bottom: 0.5rem;
-            min-width: 320px;
-            max-width: 90vw;
+            min-width: 350px;
             animation: slideInRight 0.3s ease;
         }
 
@@ -776,7 +1045,7 @@
             padding: 1rem;
             display: flex;
             align-items: center;
-            gap: 0.8rem;
+            gap: 1rem;
         }
 
         .toast-success { border-left: 4px solid var(--accent-success); }
@@ -812,72 +1081,49 @@
             to { transform: rotate(360deg); }
         }
 
-        /* ===== LIVE COUNTDOWN STYLES ===== */
-        .countdown-timer {
-            font-family: 'Space Grotesk', monospace;
-            font-weight: 600;
-            background: var(--sidebar-hover);
-            padding: 0.2rem 0.5rem;
-            border-radius: 8px;
-            font-size: 0.85rem;
-        }
-
-        .countdown-urgent {
-            color: var(--accent-danger);
-        }
-
-        .countdown-normal {
-            color: var(--accent-success);
-        }
-
-        .last-payout-info {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            display: block;
-            margin-top: 0.2rem;
-        }
-
-        .next-payout-badge {
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--accent-success);
-            padding: 0.2rem 0.5rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            margin-left: 0.5rem;
-        }
-
         /* ===== RESPONSIVE ===== */
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 992px) {
             .main-content {
                 padding: 0 1rem;
             }
 
-            .hero-stats {
-                gap: 1.5rem;
+            .marketplace-header {
+                flex-direction: column;
+                align-items: flex-start;
             }
 
-            .tokens-grid {
-                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            .search-box {
+                width: 100%;
+            }
+
+            .filter-group {
+                width: 100%;
+                overflow-x: auto;
+                padding-bottom: 0.5rem;
+            }
+
+            .filter-btn {
+                white-space: nowrap;
             }
         }
 
         @media (max-width: 768px) {
-            .navbar {
-                padding: 1rem;
-            }
-
             .hero-section {
-                padding: 2rem 1.5rem;
-            }
-
-            .hero-title {
-                font-size: 2rem;
+                padding: 2rem;
             }
 
             .hero-stats {
-                flex-direction: column;
                 gap: 1rem;
+            }
+
+            .hero-stat-item {
+                padding: 0.8rem 1.5rem;
             }
 
             .balance-actions {
@@ -893,31 +1139,9 @@
                 grid-template-columns: 1fr;
             }
 
-            .token-details {
-                grid-template-columns: 1fr;
+            .modern-table {
+                min-width: 1200px;
             }
-
-            .investments-table {
-                min-width: 1000px;
-            }
-
-            .filter-tabs {
-                overflow-x: auto;
-                flex-wrap: nowrap;
-                padding-bottom: 0.5rem;
-            }
-
-            .filter-tab {
-                white-space: nowrap;
-            }
-        }
-
-        [data-aos] {
-            pointer-events: none;
-        }
-
-        [data-aos].aos-animate {
-            pointer-events: auto;
         }
     </style>
 </head>
@@ -941,17 +1165,19 @@
         </div>
 
         <div class="d-flex align-items-center gap-4">
-            <div class="d-none d-md-flex gap-2">
-                <a href="{% url 'XMR:account' %}#dashboard-tab" class="nav-link-custom">Dashboard</a>
+            <div class="d-none d-lg-flex gap-2">
+                <a href="{% url 'XMR:account' %}" class="nav-link-custom">Dashboard</a>
                 <a href="{% url 'XMR:investments' %}" class="nav-link-custom active">Investments</a>
-                <a href="{% url 'XMR:account' %}#deposits-tab" class="nav-link-custom">Deposits</a>
-                <a href="{% url 'XMR:account' %}#withdrawals-tab" class="nav-link-custom">Withdrawals</a>
+                <a href="{% url 'XMR:account' %}?tab=deposits" class="nav-link-custom">Deposits</a>
+                <a href="{% url 'XMR:account' %}?tab=withdrawals" class="nav-link-custom">Withdrawals</a>
+                <a href="#" onclick="showReferralCode()" class="nav-link-custom">
+                    <i class="fa-solid fa-gift me-2"></i>Referrals
+                </a>
             </div>
 
             <div class="d-flex align-items-center gap-2">
                 <button class="theme-toggle" id="themeToggle">
-                    <i class="bi bi-sun-fill light-icon"></i>
-                    <i class="bi bi-moon-fill dark-icon"></i>
+                    <i class="fa-regular fa-moon"></i>
                 </button>
 
                 <div class="dropdown">
@@ -962,14 +1188,17 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="{% url 'XMR:account' %}">
-                            <i class="bi bi-person-circle me-2"></i>My Account
+                            <i class="fa-regular fa-user me-2"></i>My Account
                         </a></li>
                         <li><a class="dropdown-item" href="{% url 'XMR:investments' %}">
-                            <i class="bi bi-graph-up me-2"></i>Investments
+                            <i class="fa-solid fa-chart-line me-2"></i>Investments
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="showReferralCode()">
+                            <i class="fa-solid fa-gift me-2"></i>Referral Code
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="{% url 'XMR:logout' %}">
-                            <i class="bi bi-box-arrow-right me-2"></i>Logout
+                            <i class="fa-solid fa-sign-out-alt me-2"></i>Logout
                         </a></li>
                     </ul>
                 </div>
@@ -982,241 +1211,317 @@
 <main class="main-content">
     <!-- Hero Section -->
     <div class="hero-section" data-aos="fade-up">
-        <h1 class="hero-title">Grow Your Wealth with<br>Premium Investment Tokens</h1>
+        <h1 class="hero-title">Grow Your Wealth with Premium Investment Tokens</h1>
         <p class="hero-subtitle">Choose from our carefully curated selection of high-yield investment tokens. Each token offers guaranteed daily returns with capital preservation.</p>
         <div class="hero-stats">
             <div class="hero-stat-item">
-                <span class="hero-stat-value">{{ active_tokens|length }}</span>
-                <span class="hero-stat-label">Active Tokens</span>
+                <div class="hero-stat-value">{{ active_tokens|length }}</div>
+                <div class="hero-stat-label">Active Tokens</div>
             </div>
             <div class="hero-stat-item">
-                <span class="hero-stat-value">{{ active_investments|length }}</span>
-                <span class="hero-stat-label">Your Active</span>
+                <div class="hero-stat-value">{{ active_investments|length }}</div>
+                <div class="hero-stat-label">Your Active</div>
             </div>
             <div class="hero-stat-item">
-                <span class="hero-stat-value">{{ total_earned|default:"0"|floatformat:0 }}K+</span>
-                <span class="hero-stat-label">Your Earnings</span>
+                <div class="hero-stat-value">{{ total_earned|default:"0"|floatformat:0 }}K+</div>
+                <div class="hero-stat-label">Total Earned</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-grid" data-aos="fade-up" data-aos-delay="100">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="fa-solid fa-chart-line me-2" style="color: var(--accent-primary);"></i>Performance Overview (Last 7 Days)</h5>
+                <span class="badge" style="background: var(--accent-primary);">Live</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="fa-solid fa-pie-chart me-2" style="color: var(--accent-primary);"></i>Portfolio Distribution</h5>
+            </div>
+            <div class="chart-container">
+                <canvas id="distributionChart"></canvas>
+            </div>
+            <div class="quick-stats">
+                <div class="quick-stat">
+                    <div class="quick-stat-value">{{ active_investments|length }}</div>
+                    <div class="quick-stat-label">Active</div>
+                </div>
+                <div class="quick-stat">
+                    <div class="quick-stat-value">{{ completed_investments|length }}</div>
+                    <div class="quick-stat-label">Completed</div>
+                </div>
+                <div class="quick-stat">
+                    <div class="quick-stat-value">{{ user_token_purchases|length|default:"0" }}</div>
+                    <div class="quick-stat-label">Tokens</div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Stats Grid -->
-    <div class="stats-grid" data-aos="fade-up" data-aos-delay="100">
+    <div class="stats-grid" data-aos="fade-up" data-aos-delay="150">
         <div class="stat-card">
-            <div class="stat-icon">
-                <i class="bi bi-wallet2"></i>
+            <div class="stat-header">
+                <div class="stat-icon">
+                    <i class="fa-regular fa-wallet"></i>
+                </div>
+                <span class="stat-trend">
+                    <i class="fa-solid fa-arrow-up"></i> {{ wallet.available_balance|floatformat:0 }} available
+                </span>
             </div>
             <div class="stat-value">{{ wallet.balance|floatformat:0 }}</div>
             <div class="stat-label">Total Balance</div>
-            <div class="stat-note">{{ wallet.available_balance|floatformat:0 }} available</div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="bi bi-lock"></i>
+            <div class="stat-footer">
+                <span>Locked: {{ wallet.locked_balance|floatformat:0 }}</span>
+                <span>KSH</span>
             </div>
-            <div class="stat-value">{{ wallet.locked_balance|floatformat:0 }}</div>
-            <div class="stat-label">Locked Balance</div>
-            <div class="stat-note">In active investments</div>
         </div>
 
         <div class="stat-card">
-            <div class="stat-icon">
-                <i class="bi bi-graph-up"></i>
+            <div class="stat-header">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-chart-simple"></i>
+                </div>
+                <span class="stat-trend">
+                    <i class="fa-regular fa-clock"></i> {{ next_payout_days|default:"0" }} days
+                </span>
             </div>
             <div class="stat-value">{{ total_invested|floatformat:0 }}</div>
             <div class="stat-label">Total Invested</div>
-            <div class="stat-note">Active investments</div>
+            <div class="stat-footer">
+                <span>{{ active_investments|length }} active</span>
+                <span>investments</span>
+            </div>
         </div>
 
         <div class="stat-card">
-            <div class="stat-icon">
-                <i class="bi bi-trophy"></i>
+            <div class="stat-header">
+                <div class="stat-icon">
+                    <i class="fa-regular fa-circle-check"></i>
+                </div>
+                <span class="stat-trend">
+                    <i class="fa-regular fa-star"></i> {{ completed_investments|length }} completed
+                </span>
             </div>
             <div class="stat-value">{{ total_earned|floatformat:0 }}</div>
             <div class="stat-label">Total Earned</div>
-            <div class="stat-note">Lifetime profits</div>
+            <div class="stat-footer">
+                <span>ROI: {% widthratio total_earned total_invested 100 %}%</span>
+                <span>lifetime</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon">
+                    <i class="fa-regular fa-gem"></i>
+                </div>
+                <span class="stat-trend">
+                    <i class="fa-regular fa-clock"></i> 24h cycles
+                </span>
+            </div>
+            <div class="stat-value">{{ user_token_purchases|length|default:"0" }}</div>
+            <div class="stat-label">Tokens Owned</div>
+            <div class="stat-footer">
+                <span>{{ total_referrals|default:"0" }} referrals</span>
+                <span>{{ total_referral_earnings|default:"0"|floatformat:0 }} earned</span>
+            </div>
         </div>
     </div>
 
     <!-- Balance Card -->
-    <div class="balance-card" data-aos="fade-up" data-aos-delay="150">
+    <div class="balance-card" data-aos="fade-up" data-aos-delay="200">
         <div class="row align-items-center">
-            <div class="col-md-6">
+            <div class="col-lg-6">
                 <div class="balance-label">Your Available Balance</div>
                 <div class="balance-amount">{{ wallet.available_balance|floatformat:2 }} <small>KSH</small></div>
                 <div class="balance-actions">
-                    <a href="{% url 'XMR:account' %}#deposits-tab" class="btn-balance">
-                        <i class="bi bi-plus-circle"></i>
+                    <a href="{% url 'XMR:account' %}?tab=deposits" class="btn-balance primary">
+                        <i class="fa-solid fa-plus"></i>
                         Deposit Funds
                     </a>
-                    <a href="{% url 'XMR:account' %}#withdrawals-tab" class="btn-balance">
-                        <i class="bi bi-arrow-up-circle"></i>
+                    <a href="{% url 'XMR:account' %}?tab=withdrawals" class="btn-balance secondary">
+                        <i class="fa-solid fa-arrow-up"></i>
                         Withdraw
                     </a>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="row g-3">
+            <div class="col-lg-6">
+                <div class="row g-4">
                     <div class="col-6">
                         <div class="balance-label">Next Payout</div>
-                        <div class="fs-3 fw-bold text-primary">{{ next_payout_days|default:"0" }} <small class="fs-6">days</small></div>
+                        <div class="fs-1 fw-bold" style="color: var(--accent-primary);">{{ next_payout_days|default:"0" }} <small class="fs-6">days</small></div>
                         {% if next_payout %}
                         <small class="text-muted">{{ next_payout.token.name }} - {{ next_payout.daily_return|floatformat:0 }} KSH/day</small>
                         {% endif %}
                     </div>
                     <div class="col-6">
-                        <div class="balance-label">Active Investments</div>
-                        <div class="fs-3 fw-bold text-success">{{ active_investments|length }}</div>
-                        <small class="text-muted">{{ completed_investments|length }} completed</small>
+                        <div class="balance-label">Daily Returns</div>
+                        <div class="fs-1 fw-bold" style="color: var(--accent-success);">
+                            {% with total_daily=0 %}
+                                {% for inv in active_investments %}
+                                    {% with total_daily=total_daily|add:inv.daily_return %}
+                                    {% endwith %}
+                                {% endfor %}
+                                {{ total_daily|default:"0"|floatformat:0 }}
+                            {% endwith %}
+                            <small class="fs-6">KSH</small>
+                        </div>
+                        <small class="text-muted">Across {{ active_investments|length }} investments</small>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Filter Section -->
-    <div class="filter-section" data-aos="fade-up" data-aos-delay="200">
-        <div class="filter-tabs">
-            <span class="filter-tab active" onclick="filterTokens('all')">All Tokens</span>
-            <span class="filter-tab" onclick="filterTokens('active')">Active</span>
-            <span class="filter-tab" onclick="filterTokens('coming_soon')">Coming Soon</span>
-            <span class="filter-tab" onclick="filterTokens('sold_out')">Sold Out</span>
+    <!-- Marketplace Section -->
+    <div class="marketplace-header" data-aos="fade-up" data-aos-delay="250">
+        <h2 class="marketplace-title">Investment Marketplace</h2>
+        <div class="filter-group">
+            <button class="filter-btn active" onclick="filterTokens('all')">All</button>
+            <button class="filter-btn" onclick="filterTokens('active')">Active</button>
+            <button class="filter-btn" onclick="filterTokens('coming_soon')">Coming Soon</button>
+            <button class="filter-btn" onclick="filterTokens('sold_out')">Sold Out</button>
         </div>
-        <div class="filter-search">
-            <i class="bi bi-search"></i>
-            <input type="text" id="tokenSearch" placeholder="Search tokens by name or description...">
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="tokenSearch" placeholder="Search tokens...">
         </div>
     </div>
 
     <!-- Tokens Grid -->
-    <div class="tokens-grid" id="tokensGrid">
+    <div class="tokens-grid" id="tokensGrid" data-aos="fade-up" data-aos-delay="300">
         {% for token in active_tokens %}
-        <div class="token-card" data-token-id="{{ token.id }}" data-token-status="{{ token.status|lower }}" data-aos="fade-up" data-aos-delay="{{ forloop.counter|add:'200' }}">
+        <div class="token-card" data-token-id="{{ token.id }}" data-token-status="{{ token.status|lower }}">
             {% if token.status == 'ACTIVE' %}
             <span class="token-badge active">
-                <i class="bi bi-check-circle"></i> Active
+                <i class="fa-regular fa-circle-check me-1"></i>Active
             </span>
             {% elif token.status == 'COMING_SOON' %}
-            <span class="token-badge coming-soon">
-                <i class="bi bi-clock"></i> Coming Soon
+            <span class="token-badge coming">
+                <i class="fa-regular fa-clock me-1"></i>Coming Soon
             </span>
             {% elif token.status == 'SOLD_OUT' %}
-            <span class="token-badge sold-out">
-                <i class="bi bi-x-circle"></i> Sold Out
+            <span class="token-badge sold">
+                <i class="fa-regular fa-circle-xmark me-1"></i>Sold Out
             </span>
             {% endif %}
 
             <div class="token-icon">
-                <i class="bi {{ token.icon|default:'bi-coin' }}"></i>
+                <i class="fa-solid {{ token.icon|default:'fa-coins' }}"></i>
             </div>
 
             <h3 class="token-name">{{ token.name }}</h3>
             <div class="token-display-name">{{ token.display_name }}</div>
 
-            <div class="token-details">
-                <div class="token-detail-item">
-                    <span class="token-detail-label">Min Investment</span>
-                    <span class="token-detail-value highlight">{{ token.minimum_investment|floatformat:0 }} <small>KSH</small></span>
+            <div class="token-metrics">
+                <div class="metric">
+                    <span class="metric-label">Min Investment</span>
+                    <span class="metric-value primary">{{ token.minimum_investment|floatformat:0 }} <small>KSH</small></span>
                 </div>
-                <div class="token-detail-item">
-                    <span class="token-detail-label">Daily Return</span>
-                    <span class="token-detail-value">{{ token.daily_return|floatformat:2 }} <small>KSH</small></span>
+                <div class="metric">
+                    <span class="metric-label">Daily Return</span>
+                    <span class="metric-value success">{{ token.daily_return|floatformat:2 }} <small>KSH</small></span>
                 </div>
-                <div class="token-detail-item">
-                    <span class="token-detail-label">Duration</span>
-                    <span class="token-detail-value">{{ token.return_days }} <small>days</small></span>
+                <div class="metric">
+                    <span class="metric-label">Duration</span>
+                    <span class="metric-value">{{ token.return_days }} <small>days</small></span>
                 </div>
-                <div class="token-detail-item">
-                    <span class="token-detail-label">Total Return</span>
-                    <span class="token-detail-value highlight">{{ token.total_return|floatformat:2 }} <small>KSH</small></span>
+                <div class="metric">
+                    <span class="metric-label">Total Return</span>
+                    <span class="metric-value primary">{{ token.total_return|floatformat:2 }} <small>KSH</small></span>
                 </div>
             </div>
 
-            <div class="token-stats">
-                <div class="token-progress">
-                    <div class="progress">
+            <div class="token-progress">
+                <div class="progress-info">
+                    <span>Availability</span>
+                    <span>
                         {% if token.total_supply %}
-                            <div class="progress-bar" style="width: {% widthratio token.purchased_count token.total_supply 100 %}%"></div>
+                            {{ token.purchased_count }}/{{ token.total_supply }} sold
                         {% else %}
-                            <div class="progress-bar" style="width: {{ token.purchased_count|default:0 }}%"></div>
+                            {{ token.purchased_count }} sold
                         {% endif %}
-                    </div>
+                    </span>
                 </div>
-                <div class="token-availability">
+                <div class="progress-bar-bg">
                     {% if token.total_supply %}
-                        {{ token.purchased_count }}/{{ token.total_supply }} sold
+                        <div class="progress-fill" style="width: {% widthratio token.purchased_count token.total_supply 100 %}%"></div>
                     {% else %}
-                        {{ token.purchased_count }} sold
+                        <div class="progress-fill" style="width: 0%"></div>
                     {% endif %}
                 </div>
             </div>
 
             <div class="token-footer">
-                <div class="token-roi">
-                    <i class="bi bi-graph-up-arrow me-1"></i>
+                <div class="roi-badge">
+                    <i class="fa-solid fa-chart-line me-1"></i>
                     {{ token.roi|floatformat:1 }}% ROI
                 </div>
                 
                 {% if token.status == 'ACTIVE' %}
                     {% if token.total_supply and token.purchased_count >= token.total_supply %}
-                        <button class="btn-invest" disabled>
-                            <i class="bi bi-lock"></i> Sold Out
+                        <button class="invest-btn" disabled>
+                            <i class="fa-solid fa-lock"></i> Sold Out
                         </button>
                     {% elif wallet.available_balance < token.minimum_investment %}
-                        <button class="btn-invest" disabled>
-                            <i class="bi bi-exclamation-circle"></i> Insufficient
+                        <button class="invest-btn" disabled>
+                            <i class="fa-solid fa-ban"></i> Insufficient
                         </button>
-                    {% elif token.max_purchases_per_user %}
-                        {# Check if user has reached max purchases - using a custom template tag would be better, but for now we'll handle in JS #}
-                        <form method="POST" action="{% url 'XMR:buy_investment' token.id %}" onsubmit="return confirmInvestment('{{ token.name }}', '{{ token.minimum_investment }}', '{{ token.daily_return }}', '{{ token.return_days }}')" class="d-inline">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-invest" data-token-id="{{ token.id }}" data-max-purchases="{{ token.max_purchases_per_user }}">
-                                <i class="bi bi-lightning-charge"></i> Invest Now
-                            </button>
-                        </form>
                     {% else %}
-                        <form method="POST" action="{% url 'XMR:buy_investment' token.id %}" onsubmit="return confirmInvestment('{{ token.name }}', '{{ token.minimum_investment }}', '{{ token.daily_return }}', '{{ token.return_days }}')" class="d-inline">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-invest">
-                                <i class="bi bi-lightning-charge"></i> Invest Now
-                            </button>
-                        </form>
+                        <button class="invest-btn invest-now" 
+                                data-token-id="{{ token.id }}" 
+                                data-token-name="{{ token.name }}" 
+                                data-amount="{{ token.minimum_investment }}" 
+                                data-daily="{{ token.daily_return }}" 
+                                data-days="{{ token.return_days }}">
+                            <i class="fa-solid fa-bolt"></i> Invest Now
+                        </button>
                     {% endif %}
                 {% elif token.status == 'COMING_SOON' %}
-                    <button class="btn-invest" disabled>
-                        <i class="bi bi-clock"></i> Coming Soon
+                    <button class="invest-btn" disabled>
+                        <i class="fa-regular fa-clock"></i> Coming Soon
                     </button>
                 {% else %}
-                    <button class="btn-invest" disabled>
-                        <i class="bi bi-lock"></i> Unavailable
+                    <button class="invest-btn" disabled>
+                        <i class="fa-solid fa-lock"></i> Unavailable
                     </button>
                 {% endif %}
             </div>
         </div>
         {% empty %}
         <div class="empty-state" style="grid-column: 1/-1;">
-            <i class="bi bi-coin"></i>
+            <i class="fa-regular fa-face-frown"></i>
             <h4>No Tokens Available</h4>
             <p class="text-muted">Check back later for new investment opportunities</p>
         </div>
         {% endfor %}
     </div>
 
-    <!-- ========== ACTIVE INVESTMENTS SECTION - DATABASE DRIVEN WITH DATES ========== -->
-    <div class="investments-section" data-aos="fade-up">
+    <!-- Active Investments Portfolio -->
+    <div class="portfolio-section" data-aos="fade-up">
         <div class="section-header">
             <h3>
-                <i class="bi bi-play-circle-fill"></i>
-                Active Investments
-                <span class="next-payout-badge" id="autoPayoutIndicator">                   
-                </span>
+                <i class="fa-solid fa-chart-line"></i>
+                Active Portfolio
             </h3>
-            <span class="section-badge">{{ active_investments|length }} Active</span>
+            <div>
+                <span class="section-badge">{{ active_investments|length }} Active</span>
+                <span class="ms-2 text-success">
+                    <i class="fa-regular fa-bell me-1"></i>Auto-payout enabled
+                </span>
+            </div>
         </div>
 
         <div class="table-responsive">
-            <table class="investments-table">
+            <table class="modern-table">
                 <thead>
                     <tr>
                         <th>Token</th>
@@ -1224,73 +1529,74 @@
                         <th>Daily Return</th>
                         <th>Progress</th>
                         <th>Received</th>
+                        <th>Remaining</th>
                         <th>Start Date</th>
                         <th>End Date</th>
-                        <th>Days Left</th>
                         <th>Last Payout</th>
-                        <th>Next Payout In</th>
+                        <th>Next Payout</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for investment in active_investments %}
-                    <tr id="investment-{{ investment.id }}" class="investment-row" data-investment-id="{{ investment.id }}" data-remaining="{{ investment.remaining_payouts }}" data-last-payout="{% if investment.last_payout_date %}{{ investment.last_payout_date|date:'U' }}{% endif %}" data-created="{{ investment.created_at|date:'U' }}">
+                    <tr onclick="showInvestmentDetails({{ investment.id }})">
                         <td>
-                            <strong>{{ investment.token.name }}</strong>
-                            <br>
-                            <small class="text-muted">{{ investment.token.display_name }}</small>
+                            <div class="token-cell">
+                                <div class="token-avatar">
+                                    <i class="fa-solid {{ investment.token.icon|default:'fa-coins' }}"></i>
+                                </div>
+                                <div>
+                                    <strong>{{ investment.token.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ investment.token.display_name }}</small>
+                                </div>
+                            </div>
                         </td>
                         <td class="amount-primary">{{ investment.amount|floatformat:2 }} KSH</td>
-                        <td class="text-success">{{ investment.daily_return|floatformat:2 }} KSH</td>
-                        <td class="progress-cell">
+                        <td class="amount-positive">{{ investment.daily_return|floatformat:2 }} KSH</td>
+                        <td>
                             <div class="d-flex align-items-center gap-2">
-                                <div class="progress flex-grow-1">
-                                    <div class="progress-bar" style="width: {{ investment.get_progress_percentage }}%"></div>
+                                <div class="progress-bar-sm">
+                                    <div class="progress-fill-sm" style="width: {{ investment.get_progress_percentage }}%"></div>
                                 </div>
                                 <small>{{ investment.get_progress_percentage|floatformat:1 }}%</small>
                             </div>
                         </td>
                         <td class="amount-positive">{{ investment.total_paid|floatformat:2 }} KSH</td>
-                        <td>{{ investment.start_date|date:"M d, Y H:i" }}</td>
-                        <td>{{ investment.end_date|date:"M d, Y H:i" }}</td>
-                        <td>
-                            <span class="badge {% if investment.remaining_payouts < 3 %}bg-warning{% else %}bg-primary{% endif %}">
-                                {{ investment.remaining_payouts }}
-                            </span>
-                        </td>
+                        <td class="amount-payout">{{ investment.remaining_payouts }} days</td>
+                        <td>{{ investment.start_date|date:"M d, Y" }}</td>
+                        <td>{{ investment.end_date|date:"M d, Y" }}</td>
                         <td>
                             {% if investment.last_payout_date %}
                                 {{ investment.last_payout_date|date:"M d, H:i" }}
-                                <small class="last-payout-info">{{ investment.last_payout_date|timesince }} ago</small>
+                                <small class="d-block text-muted">{{ investment.last_payout_date|timesince }} ago</small>
                             {% else %}
                                 <span class="text-muted">Not yet</span>
-                                <small class="last-payout-info">First payout in ~24h</small>
                             {% endif %}
                         </td>
                         <td>
                             <span class="countdown-timer {% if investment.remaining_payouts < 3 %}countdown-urgent{% else %}countdown-normal{% endif %}" 
                                   data-end="{{ investment.end_date|date:'U' }}"
                                   data-last-payout="{% if investment.last_payout_date %}{{ investment.last_payout_date|date:'U' }}{% endif %}"
-                                  data-created="{{ investment.created_at|date:'U' }}"
-                                  data-id="{{ investment.id }}">
+                                  data-created="{{ investment.created_at|date:'U' }}">
                                 Calculating...
                             </span>
                         </td>
                         <td>
-                            <span class="badge-status active">
-                                <i class="bi bi-check-circle-fill"></i> ACTIVE
+                            <span class="status-badge active">
+                                <i class="fa-regular fa-circle-check"></i> Active
                             </span>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="11" class="empty-state">
-                            <i class="bi bi-play-circle"></i>
+                            <i class="fa-regular fa-folder-open"></i>
                             <h5>No Active Investments</h5>
                             <p class="text-muted">Start investing in tokens above to grow your wealth</p>
-                            <a href="#tokensGrid" class="btn-primary btn-invest mt-3" style="display: inline-block;">
-                                <i class="bi bi-coin"></i> Browse Tokens
-                            </a>
+                            <button class="btn btn-primary mt-3" onclick="document.getElementById('tokensGrid').scrollIntoView({behavior: 'smooth'})">
+                                Browse Tokens
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -1299,18 +1605,19 @@
         </div>
     </div>
 
-    <!-- ========== COMPLETED INVESTMENTS SECTION - DATABASE DRIVEN WITH DATES ========== -->
-    <div class="investments-section" data-aos="fade-up">
+    <!-- Completed Investments -->
+    {% if completed_investments %}
+    <div class="portfolio-section" data-aos="fade-up">
         <div class="section-header">
             <h3>
-                <i class="bi bi-check-circle-fill"></i>
+                <i class="fa-regular fa-circle-check"></i>
                 Completed Investments
             </h3>
-            <span class="section-badge">{{ completed_investments|length }} Completed</span>
+            <span class="section-badge" style="background: var(--accent-success);">{{ completed_investments|length }} Completed</span>
         </div>
 
         <div class="table-responsive">
-            <table class="investments-table">
+            <table class="modern-table">
                 <thead>
                     <tr>
                         <th>Token</th>
@@ -1329,36 +1636,33 @@
                     {% for investment in completed_investments %}
                     <tr>
                         <td>
-                            <strong>{{ investment.token.name }}</strong>
-                            <br>
-                            <small class="text-muted">{{ investment.token.display_name }}</small>
+                            <div class="token-cell">
+                                <div class="token-avatar">
+                                    <i class="fa-solid {{ investment.token.icon|default:'fa-coins' }}"></i>
+                                </div>
+                                <div>
+                                    <strong>{{ investment.token.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ investment.token.display_name }}</small>
+                                </div>
+                            </div>
                         </td>
                         <td class="amount-primary">{{ investment.amount|floatformat:2 }} KSH</td>
                         <td class="amount-positive">{{ investment.total_paid|floatformat:2 }} KSH</td>
-                        <td class="text-success">
-                            {{ investment.total_paid|add:investment.amount|floatformat:2 }} KSH
-                        </td>
-                        <td>{{ investment.start_date|date:"M d, Y H:i" }}</td>
-                        <td>{{ investment.end_date|date:"M d, Y H:i" }}</td>
-                        <td>{{ investment.updated_at|date:"M d, Y H:i" }}</td>
+                        <td class="amount-positive">+{{ investment.total_paid|add:investment.amount|floatformat:2 }} KSH</td>
+                        <td>{{ investment.start_date|date:"M d, Y" }}</td>
+                        <td>{{ investment.end_date|date:"M d, Y" }}</td>
+                        <td>{{ investment.updated_at|date:"M d, Y" }}</td>
                         <td>{{ investment.start_date|timesince:investment.end_date }}</td>
                         <td>
-                            <span class="badge-status completed">
-                                <i class="bi bi-check-circle"></i> COMPLETED
+                            <span class="status-badge completed">
+                                <i class="fa-regular fa-circle-check"></i> Completed
                             </span>
                         </td>
                         <td>
-                            <span class="badge bg-success text-white">
+                            <span class="badge" style="background: var(--accent-success);">
                                 {{ investment.get_progress_percentage|floatformat:1 }}%
                             </span>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="10" class="empty-state">
-                            <i class="bi bi-clock-history"></i>
-                            <h5>No Completed Investments</h5>
-                            <p class="text-muted">Your completed investments will appear here</p>
                         </td>
                     </tr>
                     {% endfor %}
@@ -1366,11 +1670,69 @@
             </table>
         </div>
     </div>
+    {% endif %}
+
+    <!-- Referral Section -->
+    {% if user.profile.referral_code %}
+    <div class="portfolio-section" data-aos="fade-up" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-dark));">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4 class="text-white mb-3">Share & Earn</h4>
+                <p class="text-white-50 mb-0">Invite friends and earn 5% commission on their first deposit!</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-light btn-lg" onclick="showReferralCode()">
+                    <i class="fa-solid fa-gift me-2"></i>Get Referral Code
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </main>
+
+<!-- Investment Modal -->
+<div class="modal fade" id="investmentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Investment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="investmentModalBody">
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmInvestBtn" style="background: var(--accent-primary); border: none;">
+                    <i class="fa-solid fa-bolt me-2"></i>Confirm Investment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Investment Details Modal -->
+<div class="modal fade" id="investmentDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Investment Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="investmentDetailsContent">
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     // Initialize AOS
@@ -1380,137 +1742,231 @@
         offset: 50
     });
 
-    // ========== THEME TOGGLE ==========
+    // Theme Toggle
     const themeToggle = document.getElementById('themeToggle');
     const html = document.documentElement;
-    
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    html.setAttribute('data-bs-theme', savedTheme);
     
     themeToggle.addEventListener('click', () => {
         const currentTheme = html.getAttribute('data-bs-theme');
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         html.setAttribute('data-bs-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
+        themeToggle.innerHTML = newTheme === 'light' ? '<i class="fa-regular fa-moon"></i>' : '<i class="fa-regular fa-sun"></i>';
     });
 
-    // ========== FILTER TOKENS ==========
-    function filterTokens(status) {
-        // Get the clicked element
-        const clickedTab = event.target;
-        
-        // Update active tab
-        document.querySelectorAll('.filter-tab').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        clickedTab.classList.add('active');
-        
-        // Filter tokens
-        const tokens = document.querySelectorAll('.token-card');
-        tokens.forEach(token => {
-            const tokenStatus = token.dataset.tokenStatus;
-            if (status === 'all' || tokenStatus === status) {
-                token.style.display = 'block';
-            } else {
-                token.style.display = 'none';
+    // ===== CHARTS =====
+    {% if daily_deposits %}
+    const dailyDeposits = {{ daily_deposits|safe }};
+    {% else %}
+    const dailyDeposits = [];
+    {% endif %}
+
+    // Performance Chart
+    const perfCtx = document.getElementById('performanceChart')?.getContext('2d');
+    if (perfCtx) {
+        new Chart(perfCtx, {
+            type: 'line',
+            data: {
+                labels: dailyDeposits.map(d => d.date),
+                datasets: [{
+                    label: 'Daily Deposits',
+                    data: dailyDeposits.map(d => d.total),
+                    borderColor: '#f15a24',
+                    backgroundColor: 'rgba(241, 90, 36, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#f15a24',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `KSH ${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)',
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return 'KSH ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
             }
         });
     }
 
-    // ========== SEARCH TOKENS ==========
+    // Distribution Chart
+    const distCtx = document.getElementById('distributionChart')?.getContext('2d');
+    if (distCtx) {
+        new Chart(distCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Active', 'Completed', 'Available'],
+                datasets: [{
+                    data: [
+                        {{ active_investments|length }},
+                        {{ completed_investments|length }},
+                        {{ active_tokens|length }}
+                    ],
+                    backgroundColor: [
+                        '#f15a24',
+                        '#10b981',
+                        '#3b82f6'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: 'var(--text-primary)'
+                        }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+    }
+
+    // ===== FILTER TOKENS =====
+    function filterTokens(status) {
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        document.querySelectorAll('.token-card').forEach(card => {
+            const cardStatus = card.dataset.tokenStatus;
+            card.style.display = status === 'all' || cardStatus === status ? 'block' : 'none';
+        });
+    }
+
+    // ===== SEARCH TOKENS =====
     document.getElementById('tokenSearch').addEventListener('input', function(e) {
         const searchTerm = e.target.value.toLowerCase();
-        const tokens = document.querySelectorAll('.token-card');
-        
-        tokens.forEach(token => {
-            const tokenName = token.querySelector('.token-name').textContent.toLowerCase();
-            const tokenDisplayName = token.querySelector('.token-display-name').textContent.toLowerCase();
-            
-            if (tokenName.includes(searchTerm) || tokenDisplayName.includes(searchTerm)) {
-                token.style.display = 'block';
-            } else {
-                token.style.display = 'none';
-            }
+        document.querySelectorAll('.token-card').forEach(card => {
+            const name = card.querySelector('.token-name').textContent.toLowerCase();
+            const displayName = card.querySelector('.token-display-name').textContent.toLowerCase();
+            card.style.display = name.includes(searchTerm) || displayName.includes(searchTerm) ? 'block' : 'none';
         });
     });
 
-    // ========== CONFIRM INVESTMENT ==========
-    function confirmInvestment(tokenName, amount, dailyReturn, days) {
-        const totalReturn = (parseFloat(dailyReturn) * parseInt(days)).toFixed(2);
-        const message = 
-            `Confirm Investment in ${tokenName}:\n\n` +
-            `Amount: ${amount} KSH\n` +
-            `Daily Return: ${dailyReturn} KSH\n` +
-            `Duration: ${days} days\n` +
-            `Total Return: ${totalReturn} KSH\n\n` +
-            `This amount will be deducted from your available balance.\n` +
-            `Continue with investment?`;
-        
-        return confirm(message);
-    }
+    // ===== INVESTMENT MODAL =====
+    const investmentModal = new bootstrap.Modal(document.getElementById('investmentModal'));
+    let currentTokenId = null;
 
-    // ========== TOAST NOTIFICATIONS ==========
-    function showToast(message, type = 'success') {
-        const toastContainer = document.getElementById('toastContainer');
-        const toastId = 'toast-' + Date.now();
-        
-        const toast = document.createElement('div');
-        toast.id = toastId;
-        toast.className = `toast toast-${type}`;
-        toast.setAttribute('role', 'alert');
-        
-        const icon = type === 'success' ? 'bi-check-circle' : 
-                    type === 'error' ? 'bi-exclamation-circle' :
-                    type === 'warning' ? 'bi-exclamation-triangle' : 'bi-info-circle';
-        
-        toast.innerHTML = `
-            <div class="toast-body">
-                <i class="bi ${icon} fs-5"></i>
-                <span class="flex-grow-1">${message}</span>
-                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
-            </div>
-        `;
-        
-        toastContainer.appendChild(toast);
-        const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
-        bsToast.show();
-        
-        toast.addEventListener('hidden.bs.toast', () => toast.remove());
-    }
+    document.querySelectorAll('.invest-now').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tokenId = this.dataset.tokenId;
+            const tokenName = this.dataset.tokenName;
+            const amount = parseFloat(this.dataset.amount);
+            const daily = parseFloat(this.dataset.daily);
+            const days = parseInt(this.dataset.days);
+            const totalReturn = daily * days;
+            const profit = totalReturn - amount;
 
-    // ========== LIVE COUNTDOWN TIMER ==========
-    function updateAllCountdowns() {
-        const now = Math.floor(Date.now() / 1000); // Current time in seconds
+            document.getElementById('investmentModalBody').innerHTML = `
+                <div class="text-center">
+                    <div class="display-6 mb-4" style="color: var(--accent-primary);">${tokenName}</div>
+                    <div class="investment-summary">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <small class="text-muted">Investment Amount</small>
+                                <div class="h4 mb-0" style="color: var(--accent-primary);">${formatCurrency(amount)} KSH</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Daily Return</small>
+                                <div class="h4 mb-0" style="color: var(--accent-success);">${formatCurrency(daily)} KSH</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Duration</small>
+                                <div class="h4 mb-0">${days} Days</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Total Return</small>
+                                <div class="h4 mb-0" style="color: var(--accent-primary);">${formatCurrency(totalReturn)} KSH</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-3" style="background: rgba(16, 185, 129, 0.1); border-radius: 12px;">
+                        <span class="text-success">
+                            <i class="fa-solid fa-circle-check me-2"></i>
+                            Profit: +${formatCurrency(profit)} KSH (${((profit/amount)*100).toFixed(1)}% ROI)
+                        </span>
+                    </div>
+                    <p class="text-muted mt-3 mb-0">
+                        <i class="fa-regular fa-clock me-1"></i>
+                        Funds will be locked for ${days} days with daily payouts
+                    </p>
+                </div>
+            `;
+
+            currentTokenId = tokenId;
+            investmentModal.show();
+        });
+    });
+
+    document.getElementById('confirmInvestBtn').addEventListener('click', function() {
+        if (currentTokenId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{% url 'XMR:buy_investment' 0 %}".replace('0', currentTokenId);
+            
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = 'csrfmiddlewaretoken';
+            csrf.value = '{{ csrf_token }}';
+            
+            form.appendChild(csrf);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+
+    // ===== COUNTDOWN TIMER =====
+    function updateCountdowns() {
+        const now = Math.floor(Date.now() / 1000);
         
         document.querySelectorAll('.countdown-timer').forEach(timer => {
             const endDate = parseInt(timer.dataset.end);
             const lastPayout = timer.dataset.lastPayout ? parseInt(timer.dataset.lastPayout) : null;
             const created = parseInt(timer.dataset.created);
-            const investmentId = timer.dataset.id;
             
-            let nextPayoutTime;
-            
+            let nextPayout;
             if (!lastPayout || isNaN(lastPayout)) {
-                // No payouts yet - first payout is 24 hours after creation
-                nextPayoutTime = created + (24 * 3600);
+                nextPayout = created + (24 * 3600);
             } else {
-                // Subsequent payouts - 24 hours after last payout
-                nextPayoutTime = lastPayout + (24 * 3600);
+                nextPayout = lastPayout + (24 * 3600);
             }
             
-            // Calculate seconds until next payout
-            const secondsUntil = nextPayoutTime - now;
+            const secondsLeft = nextPayout - now;
             
-            if (secondsUntil <= 0) {
-                // Payout should have happened - show "Processing"
-                timer.innerHTML = '<span class="text-warning"><i class="bi bi-hourglass-split"></i> Processing...</span>';
+            if (secondsLeft <= 0) {
+                timer.innerHTML = '<span class="text-warning"><i class="fa-solid fa-spinner fa-spin"></i> Processing</span>';
             } else {
-                // Calculate hours, minutes, seconds
-                const hours = Math.floor(secondsUntil / 3600);
-                const minutes = Math.floor((secondsUntil % 3600) / 60);
-                const seconds = secondsUntil % 60;
+                const hours = Math.floor(secondsLeft / 3600);
+                const minutes = Math.floor((secondsLeft % 3600) / 60);
+                const seconds = secondsLeft % 60;
                 
-                // Format the time
                 let timeString;
                 if (hours > 24) {
                     const days = Math.floor(hours / 24);
@@ -1526,25 +1982,103 @@
         });
     }
 
-    // Update countdown every second
-    setInterval(updateAllCountdowns, 1000);
-    
-    // Initial update
-    setTimeout(updateAllCountdowns, 100);
+    setInterval(updateCountdowns, 1000);
+    updateCountdowns();
 
-    // ========== MAX PURCHASE VALIDATION ==========
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get user token purchases from data attribute or API
-        // For now, we'll rely on server-side validation
+    // ===== SHOW INVESTMENT DETAILS =====
+    function showInvestmentDetails(investmentId) {
+        const row = document.getElementById(`investment-${investmentId}`);
+        if (!row) {
+            // Find the row by data attribute
+            const rows = document.querySelectorAll(`tr[onclick*="showInvestmentDetails(${investmentId})"]`);
+            if (rows.length > 0) {
+                const cells = rows[0].cells;
+                showDetailsModal(cells);
+            }
+        }
+    }
+
+    function showDetailsModal(cells) {
+        const details = {
+            token: cells[0].querySelector('strong').textContent,
+            tokenDisplay: cells[0].querySelector('small').textContent,
+            amount: cells[1].textContent,
+            daily: cells[2].textContent,
+            progress: cells[3].querySelector('small').textContent,
+            received: cells[4].textContent,
+            remaining: cells[5].textContent,
+            start: cells[6].textContent,
+            end: cells[7].textContent,
+            lastPayout: cells[8].innerHTML,
+            nextPayout: cells[9].querySelector('.countdown-timer').innerHTML
+        };
         
-        {% if messages %}
-            {% for message in messages %}
-                showToast('{{ message|escapejs }}', '{{ message.tags }}');
-            {% endfor %}
-        {% endif %}
-    });
+        document.getElementById('investmentDetailsContent').innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="investment-summary">
+                        <h6 class="mb-3">Investment Information</h6>
+                        <p><strong>Token:</strong> ${details.token} (${details.tokenDisplay})</p>
+                        <p><strong>Amount:</strong> <span class="amount-primary">${details.amount}</span></p>
+                        <p><strong>Daily Return:</strong> <span class="amount-positive">${details.daily}</span></p>
+                        <p><strong>Progress:</strong> ${details.progress}</p>
+                        <p><strong>Received So Far:</strong> <span class="amount-positive">${details.received}</span></p>
+                        <p><strong>Remaining Days:</strong> ${details.remaining}</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="investment-summary">
+                        <h6 class="mb-3">Timeline</h6>
+                        <p><strong>Start Date:</strong> ${details.start}</p>
+                        <p><strong>End Date:</strong> ${details.end}</p>
+                        <p><strong>Last Payout:</strong> ${details.lastPayout}</p>
+                        <p><strong>Next Payout:</strong> <span class="countdown-normal">${details.nextPayout}</span></p>
+                    </div>
+                    <div class="mt-3 p-3" style="background: rgba(16, 185, 129, 0.1); border-radius: 12px;">
+                        <h6 class="mb-2">Expected Returns</h6>
+                        <p class="mb-1">Total Expected: <span class="amount-positive">${details.received.replace('KSH', '').trim()} KSH</span></p>
+                        <p class="mb-0">ROI: <span class="text-success">${details.progress.replace('%', '').trim()}%</span></p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const detailsModal = new bootstrap.Modal(document.getElementById('investmentDetailsModal'));
+        detailsModal.show();
+    }
 
-    // ========== FORMAT CURRENCY HELPER ==========
+    // ===== REFERRAL CODE =====
+    function showReferralCode() {
+        {% if user.profile.referral_code %}
+        Swal.fire({
+            title: 'Your Referral Code',
+            html: `
+                <div style="background: var(--sidebar-hover); padding: 2rem; border-radius: 16px; margin: 1rem 0;">
+                    <code style="font-size: 2.5rem; color: var(--accent-primary);">{{ user.profile.referral_code }}</code>
+                </div>
+                <p class="text-muted">Share this code with friends and earn 5% commission on their first deposit!</p>
+                <p class="small">Total Referrals: {{ total_referrals|default:"0" }} | Earnings: {{ total_referral_earnings|default:"0"|floatformat:2 }} KSH</p>
+            `,
+            showConfirmButton: true,
+            confirmButtonColor: '#f15a24',
+            confirmButtonText: '<i class="fa-regular fa-copy me-2"></i>Copy Code',
+            showCloseButton: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                navigator.clipboard.writeText('{{ user.profile.referral_code }}');
+                Swal.fire({
+                    title: 'Copied!',
+                    text: 'Referral code copied to clipboard',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+        });
+        {% endif %}
+    }
+
+    // ===== HELPER FUNCTIONS =====
     function formatCurrency(amount) {
         return new Intl.NumberFormat('en-KE', {
             minimumFractionDigits: 2,
@@ -1552,23 +2086,26 @@
         }).format(amount);
     }
 
+    // ===== MESSAGES =====
+    {% if messages %}
+        {% for message in messages %}
+        Swal.fire({
+            title: '{{ message.tags|title }}',
+            text: '{{ message|escapejs }}',
+            icon: '{{ message.tags }}',
+            confirmButtonColor: '#f15a24',
+            timer: 5000,
+            timerProgressBar: true
+        });
+        {% endfor %}
+    {% endif %}
+
     // Smooth scroll to tokens
-    document.querySelectorAll('a[href="#tokensGrid"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            e.preventDefault();
-            document.querySelector('#tokensGrid').scrollIntoView({
-                behavior: 'smooth'
-            });
+    document.querySelectorAll('button[onclick*="document.getElementById(\'tokensGrid\')"]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('tokensGrid').scrollIntoView({ behavior: 'smooth' });
         });
     });
-
-    // Handle hash links for navigation from account page
-    if (window.location.hash) {
-        const hash = window.location.hash.substring(1);
-        if (hash === 'deposits-tab' || hash === 'withdrawals-tab' || hash === 'dashboard-tab') {
-            window.location.href = "{% url 'XMR:account' %}#" + hash;
-        }
-    }
 </script>
 
 </body>
